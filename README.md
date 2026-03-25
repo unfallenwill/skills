@@ -1,6 +1,6 @@
-# Claude Plugins
+# Newstar
 
-Claude Code 插件集合，包含 Skills、Slash Commands、Hooks、Agents 等 Claude Code 扩展。
+Claude Code 插件集合，包含 Skills、Slash Commands、Hooks、Agents 等扩展。
 
 ## 插件列表
 
@@ -11,14 +11,15 @@ Claude Code 插件集合，包含 Skills、Slash Commands、Hooks、Agents 等 C
 
 ## 安装
 
-将插件目录复制到项目的 `.claude/plugins/` 目录下即可使用：
+通过 Marketplace 安装（推荐）：
 
 ```bash
-# 安装单个插件
-cp -r plugins/cnb-issue .claude/plugins/
+# 添加 Marketplace
+/plugin marketplace add caostack/newstar
 
-# 安装所有插件
-cp -r plugins/* .claude/plugins/
+# 安装插件
+/plugin install cnb-issue@newstar
+/plugin install capability-trainer@newstar
 ```
 
 ## 插件结构
@@ -42,3 +43,6 @@ plugin-name/
 1. 在 `plugins/` 下创建插件目录
 2. 添加 `.claude-plugin/plugin.json`
 3. 按需添加 skills、commands、hooks、agents 等组件
+4. 更新 `.claude-plugin/marketplace.json` 中的插件条目
+
+详见 [CLAUDE.md](CLAUDE.md)。
