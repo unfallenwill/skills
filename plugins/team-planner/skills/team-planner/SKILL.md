@@ -2,8 +2,9 @@
 name: team-planner
 description: >-
   This skill should be used when the user wants to "plan a multi-agent team",
-  "design an agent team", "plan team collaboration", "如何用多 agent 完成任务",
-  "帮我规划 agent 团队", "设计团队方案", or mentions using multiple agents/teammates
+  "design an agent team", "plan team collaboration", "用 team 来做这个",
+  "如何用多 agent 完成任务", "帮我规划 agent 团队", "设计团队方案",
+  "任务很大需要拆分", "同时做前端和后端", or mentions using multiple agents/teammates/swarm
   to accomplish a task. Researches the task context, evaluates whether multi-agent
   is needed, then outputs a structured team design proposal. Do NOT use for
   actually executing the task — only for planning and designing the team structure.
@@ -40,7 +41,9 @@ $ARGUMENTS
 - writing 任务：写作主题、目标读者、内容范围
 - 其他类型：根据实际需要确定调研内容
 
-复杂任务做深调研（依赖关系、模块耦合），简单任务做浅调研（目录结构）。
+复杂任务做深调研（依赖关系、模块耦合），简单任务做浅调研（目录结构）。判断标准：
+- 深调研：涉及 3+ 个模块、跨 2+ 个技术栈、改动范围不确定
+- 浅调研：改动集中在 1-2 个文件、任务范围清晰、单一技术栈
 
 ### Phase 2: Go/No-Go — 是否需要多 Agent
 
@@ -92,7 +95,7 @@ $ARGUMENTS
 
 **设计原则**：
 - 每个角色单一职责，边界清晰
-- Agent 数量控制在 3-5 个（超过 5 个协调成本急剧上升）
+- Agent 数量推荐 3-5 个，不超过 7 个（超过 5 个协调成本急剧上升）
 - 每个 agent 分配 5-6 个任务（太少浪费，太多上下文压力）
 - 优先消除 agent 间通信 — 最成功的系统是 agent 独立工作、结果机械合并
 
