@@ -2,15 +2,16 @@
 name: team-planner
 description: >-
   This skill should be used when the user wants to "plan a multi-agent team",
-  "design an agent team", "plan team collaboration", "用 team 来做这个",
+  "design an agent team", "create a team for X", "plan team collaboration",
+  "split this task across agents", "design agent roles for X",
+  "organize a multi-agent workflow", "用 team 来做这个",
   "如何用多 agent 完成任务", "帮我规划 agent 团队", "设计团队方案",
-  "任务很大需要拆分", "同时做前端和后端", or mentions using multiple agents/teammates/swarm
-  to accomplish a task. Researches the task context, evaluates whether multi-agent
-  is needed, then outputs a structured team design proposal. Do NOT use for
-  actually executing the task — only for planning and designing the team structure.
-argument-hint: "[task description]"
-context: fork
-agent: Explore
+  "任务很大需要拆分", "同时做前端和后端", "规划一下怎么分工",
+  "帮我拆分任务", "组建一个团队", or mentions using multiple agents/
+  teammates/swarm to accomplish a task. Researches the task context, evaluates
+  whether multi-agent is needed, then outputs a structured team design proposal.
+  Do NOT use for actually executing the task -- only for planning and designing
+  the team structure.
 ---
 
 ## Objective
@@ -87,7 +88,7 @@ $ARGUMENTS
 - **独立任务**：可以同时执行
 - **共享资源**：需要访问相同文件或数据，注意冲突
 
-> LLM 倾向于默认顺序排列，实际能并行的任务比想象的多。主动寻找并行机会。
+> 主动寻找并行机会，避免默认按顺序排列所有任务 -- 实际能并行的任务比想象的多。
 
 ### Phase 5: Agent 角色设计
 
@@ -106,7 +107,7 @@ $ARGUMENTS
 - 关键工具（只给角色需要的工具，避免工具过载）
 
 **必须避免的反模式**：
-- "Bag of Agents" — 角色过多（Planner + Critic + Monitor + Evaluator）导致冲突和 17 倍错误放大
+- "Bag of Agents" — 角色过多（Planner + Critic + Monitor + Evaluator）导致冲突和错误级联放大
 - 多个 agent 同时修改相同文件 — 冲突会级联放大
 - agent 之间需要频繁通信 — 说明任务分解有问题
 

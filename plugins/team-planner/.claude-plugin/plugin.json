@@ -1,6 +1,5 @@
 {
   "name": "team-planner",
   "version": "1.0.0",
-  "description": "根据需求调研代码仓库现状，设计多 Agent 团队方案（角色、任务、依赖、执行顺序）",
-  "skills": "./skills/"
+  "description": "根据需求调研代码仓库现状，设计多 Agent 团队方案（角色、任务、依赖、执行顺序）"
 }
