@@ -1,0 +1,6 @@
+{
+  "name": "plugin-dev",
+  "version": "1.0.0",
+  "description": "Claude Code 插件开发向导，指导创建、修改、调试插件组件（Skill、Agent、Hook、Command）",
+  "skills": "./skills/"
+}
