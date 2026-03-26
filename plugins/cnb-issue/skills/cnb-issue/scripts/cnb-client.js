@@ -32,14 +32,6 @@ async function getClient() {
   return clientInstance;
 }
 
-/**
- * 解析仓库路径
- * @param {string} repo - 仓库路径，如 "owner/repo" 或 "group/project/repo"
- */
-function parseRepo(repo) {
-  return repo;
-}
-
 // ============ Issue 操作 ============
 
 /**
@@ -50,7 +42,7 @@ function parseRepo(repo) {
 async function listIssues(repo, params = {}) {
   const client = await getClient();
   const result = await client.apis.Issues.ListIssues({
-    repo: parseRepo(repo),
+    repo: repo,
     ...params
   });
   return result.body || result.data;
@@ -64,7 +56,7 @@ async function listIssues(repo, params = {}) {
 async function getIssue(repo, number) {
   const client = await getClient();
   const result = await client.apis.Issues.GetIssue({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number
   });
   return result.body || result.data;
@@ -82,7 +74,7 @@ async function getIssue(repo, number) {
 async function createIssue(repo, issue) {
   const client = await getClient();
   const result = await client.apis.Issues.CreateIssue({
-    repo: parseRepo(repo),
+    repo: repo,
     post_issue_form: {
       title: issue.title,
       body: issue.body || '',
@@ -102,7 +94,7 @@ async function createIssue(repo, issue) {
 async function updateIssue(repo, number, updates) {
   const client = await getClient();
   const result = await client.apis.Issues.UpdateIssue({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     patch_issue_form: updates
   });
@@ -117,7 +109,7 @@ async function updateIssue(repo, number, updates) {
 async function getAssignees(repo, number) {
   const client = await getClient();
   const result = await client.apis.Issues.ListIssueAssignees({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number
   });
   return result.body || result.data;
@@ -132,7 +124,7 @@ async function getAssignees(repo, number) {
 async function addAssignees(repo, number, assignees) {
   const client = await getClient();
   const result = await client.apis.Issues.PostIssueAssignees({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     post_issue_assignees_form: { assignees }
   });
@@ -145,7 +137,7 @@ async function addAssignees(repo, number, assignees) {
 async function removeAssignees(repo, number, assignees) {
   const client = await getClient();
   const result = await client.apis.Issues.DeleteIssueAssignees({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     delete_issue_assignees_form: { assignees }
   });
@@ -160,7 +152,7 @@ async function removeAssignees(repo, number, assignees) {
 async function getLabels(repo, number) {
   const client = await getClient();
   const result = await client.apis.Issues.ListIssueLabels({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number
   });
   return result.body || result.data;
@@ -172,7 +164,7 @@ async function getLabels(repo, number) {
 async function addLabels(repo, number, labels) {
   const client = await getClient();
   const result = await client.apis.Issues.PostIssueLabels({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     post_issue_labels_form: { labels }
   });
@@ -185,7 +177,7 @@ async function addLabels(repo, number, labels) {
 async function setLabels(repo, number, labels) {
   const client = await getClient();
   const result = await client.apis.Issues.PutIssueLabels({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     put_issue_labels_form: { labels }
   });
@@ -198,7 +190,7 @@ async function setLabels(repo, number, labels) {
 async function clearLabels(repo, number) {
   const client = await getClient();
   const result = await client.apis.Issues.DeleteIssueLabels({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number
   });
   return result.body || result.data;
@@ -210,7 +202,7 @@ async function clearLabels(repo, number) {
 async function removeLabel(repo, number, name) {
   const client = await getClient();
   const result = await client.apis.Issues.DeleteIssueLabel({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     name: name
   });
@@ -225,7 +217,7 @@ async function removeLabel(repo, number, name) {
 async function getComments(repo, number, params = {}) {
   const client = await getClient();
   const result = await client.apis.Issues.ListIssueComments({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     ...params
   });
@@ -238,7 +230,7 @@ async function getComments(repo, number, params = {}) {
 async function createComment(repo, number, body) {
   const client = await getClient();
   const result = await client.apis.Issues.PostIssueComment({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     post_issue_comment_form: { body }
   });
@@ -251,7 +243,7 @@ async function createComment(repo, number, body) {
 async function getComment(repo, number, commentId) {
   const client = await getClient();
   const result = await client.apis.Issues.GetIssueComment({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     comment_id: commentId
   });
@@ -264,7 +256,7 @@ async function getComment(repo, number, commentId) {
 async function updateComment(repo, number, commentId, body) {
   const client = await getClient();
   const result = await client.apis.Issues.PatchIssueComment({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     comment_id: commentId,
     patch_issue_comment_form: { body }
@@ -280,7 +272,7 @@ async function updateComment(repo, number, commentId, body) {
 async function updateProperties(repo, number, properties) {
   const client = await getClient();
   const result = await client.apis.Issues.UpdateIssueProperties({
-    repo: parseRepo(repo),
+    repo: repo,
     number: number,
     issue_properties_form: { properties }
   });

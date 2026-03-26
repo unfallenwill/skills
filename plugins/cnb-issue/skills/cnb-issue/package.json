@@ -1,4 +1,7 @@
 {
+  "name": "cnb-issue-skill",
+  "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "swagger-client": "^3.36.2"
   }
