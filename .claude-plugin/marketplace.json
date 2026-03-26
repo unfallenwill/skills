@@ -31,6 +31,12 @@
       "source": "./plugins/plugin-dev",
       "description": "Claude Code 插件开发向导，指导创建、修改、调试插件组件（Skill、Agent、Hook、Command）",
       "version": "1.0.0"
+    },
+    {
+      "name": "feature-explorer",
+      "source": "./plugins/feature-explorer",
+      "description": "深入解析代码仓库中某个功能的实现原理，追踪调用链、梳理数据流、输出结构化报告",
+      "version": "1.0.0"
     }
   ]
 }

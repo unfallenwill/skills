@@ -1,0 +1,6 @@
+{
+  "name": "feature-explorer",
+  "version": "1.0.0",
+  "description": "深入解析代码仓库中某个功能的实现原理，追踪调用链、梳理数据流、输出结构化报告",
+  "skills": "./skills/"
+}
