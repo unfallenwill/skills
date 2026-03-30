@@ -15,8 +15,8 @@
 
 ```bash
 export VICTORIA_METRICS_URL="http://vmselect:8481/select/0/prometheus"  # 或单节点 http://localhost:8428
-export VICTORIA_LOGS_URL="http://vlselect:9428"
-export VICTORIA_TRACES_URL="http://vtselect:10428"
+export VICTORIA_LOGS_URL="http://vlselect:9429"
+export VICTORIA_TRACES_URL="http://vtselect:9428"
 ```
 
 ## 使用示例
