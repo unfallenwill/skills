@@ -1,40 +1,27 @@
 # victoria-observe
 
-查询和分析 VictoriaMetrics、VictoriaLogs、VictoriaTraces 的可观测性数据，支持指标查询、日志搜索和分布式链路追踪。
+VictoriaMetrics 生态领域知识扩展插件，在 Agent 需要时自动加载相关查询语言和 API 参考。
 
-## 功能
+## 知识 Skills
 
-- **VictoriaMetrics** — MetricsQL/PromQL 即时查询、范围查询、标签发现、序列查找、数据导出
-- **VictoriaLogs** — LogsQL 日志查询、命中统计、字段发现、日志流浏览
-- **VictoriaTraces** — 服务列表、操作查询、链路搜索、依赖图（兼容 Jaeger API）
-- **诊断工作流** — 从 metrics 发现异常 → logs 定位错误 → traces 还原调用链
+| Skill | 说明 |
+|-------|------|
+| `metricsql` | MetricsQL 查询语言（VictoriaMetrics），含 rollup 函数、聚合操作符、WITH 模板等 |
+| `promql` | PromQL 基础（Prometheus 兼容），含即时/范围向量、标签匹配、偏移修饰符等 |
+| `logsql` | LogsQL 查询语言（VictoriaLogs），含过滤器、管道操作符、聚合统计等 |
+| `victoriametrics-api` | VictoriaMetrics HTTP API 参考，含即时/范围查询、数据导入导出、TSDB 统计、快照管理等端点 |
+| `victorialogs-api` | VictoriaLogs HTTP API 参考，含日志查询、命中统计、字段发现、实时尾随等端点 |
+| `victoriatraces-api` | VictoriaTraces HTTP API 参考，含 Jaeger 兼容的服务/链路/依赖图查询端点 |
 
-## 前置条件
+## 自动触发
 
-设置以下环境变量：
+各 Skill 通过 `description` frontmatter 自动匹配。当对话涉及以下话题时会自动加载：
 
-```bash
-export VICTORIA_METRICS_URL="http://vmselect:8481/select/0/prometheus"  # 或单节点 http://localhost:8428
-export VICTORIA_LOGS_URL="http://vlselect:9429"
-export VICTORIA_TRACES_URL="http://vtselect:9428"
-```
-
-## 使用示例
-
-```bash
-# 查询指标
-node $SCRIPT metrics query 'up'
-node $SCRIPT metrics range 'rate(http_requests_total[5m])' --start 1h --step 60s
-
-# 查询日志
-node $SCRIPT logs query '_stream:{app="api"} error' --start 30m
-node $SCRIPT logs streams
-
-# 查询链路
-node $SCRIPT traces services
-node $SCRIPT traces search --service my-service --limit 20 --start 1h
-node $SCRIPT traces get <traceID>
-```
+- 编写 MetricsQL 或 PromQL 查询 → 加载 `metricsql` / `promql`
+- 编写 LogsQL 查询或搜索日志 → 加载 `logsql`
+- 构造 VictoriaMetrics HTTP 请求 → 加载 `victoriametrics-api`
+- 构造 VictoriaLogs HTTP 请求 → 加载 `victorialogs-api`
+- 搜索链路、查询服务/依赖关系 → 加载 `victoriatraces-api`
 
 ## 安装
 

@@ -1,6 +1,6 @@
 {
   "name": "victoria-observe",
   "version": "1.0.0",
-  "description": "查询和分析 VictoriaMetrics、VictoriaLogs、VictoriaTraces 的可观测性数据",
+  "description": "VictoriaMetrics 生态领域知识扩展：MetricsQL、LogsQL、PromQL 查询语言及 VictoriaMetrics/VictoriaLogs/VictoriaTraces HTTP API 参考",
   "skills": "./skills/"
 }

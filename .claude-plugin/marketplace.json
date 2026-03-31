@@ -35,7 +35,7 @@
     {
       "name": "victoria-observe",
       "source": "./plugins/victoria-observe",
-      "description": "查询和分析 VictoriaMetrics、VictoriaLogs、VictoriaTraces 的可观测性数据，支持指标查询、日志搜索和分布式链路追踪",
+      "description": "VictoriaMetrics 生态领域知识扩展：MetricsQL、LogsQL、PromQL 查询语言及 VictoriaMetrics/VictoriaLogs/VictoriaTraces HTTP API 参考",
       "version": "1.0.0"
     }
   ]
