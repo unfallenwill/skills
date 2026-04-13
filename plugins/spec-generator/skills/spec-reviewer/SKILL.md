@@ -7,6 +7,7 @@ context: fork
 allowed-tools:
   - Read
   - Write
+  - Edit
 ---
 
 # 步骤 5：规格文档质量审查
@@ -109,4 +110,21 @@ allowed-tools:
 
 1. 按模板结构填充审查结果（概要、覆盖度分析表、关键问题、改进建议）
 2. 使用 Write 工具写入文件
-3. 使用 Read 工具回读文件，验证内容完整写入
+
+### 质量门禁自检
+
+读取 `plugins/spec-generator/skills/spec-reviewer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/review-report.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+
+### 返回编排器
+
+完成所有工作后，输出以下格式的状态信息（不要包含其他内容）：
+
+```
+[STATUS: success | partial | failed]
+[OUTPUT: review-report.md]
+[WARNINGS: 警告列表，没有则为 none]
+[ISSUES: 阻塞问题列表，没有则为 none]
+[SUMMARY: 一句话摘要]
+```
+
+注意：STATUS 为 success 时审查结论为 PASS 或 PASS_WITH_NOTES。STATUS 为 failed 时审查结论为 NEEDS_REVISION，编排器将重新调用 spec-creator 进行返工。

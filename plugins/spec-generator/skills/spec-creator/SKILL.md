@@ -7,6 +7,7 @@ context: fork
 allowed-tools:
   - Read
   - Write
+  - Edit
 ---
 
 # 步骤 4：生成规格文档
@@ -145,6 +146,30 @@ allowed-tools:
 
 1. 按模板结构填充生成的规格内容
 2. 使用 Write 工具写入 `$ARGUMENTS/{feature-name}-spec.md`
-3. 使用 Read 工具回读文件，验证内容完整写入
 
 `{feature-name}` 从 prd-source.md 元数据头中获取。
+
+### 返工模式
+
+如果 `$ARGUMENTS/review-report.md` 存在且审查结论为 `NEEDS_REVISION`：
+
+1. 使用 Read 工具读取 `$ARGUMENTS/review-report.md`，获取关键问题列表
+2. 使用 Read 工具读取当前的 `$ARGUMENTS/{feature-name}-spec.md`
+3. 针对 review-report 中的每个关键问题，使用 Edit 工具定向修复 spec 文件
+4. 修复完成后重新执行质量门禁自检
+
+### 质量门禁自检
+
+读取 `plugins/spec-generator/skills/spec-creator/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/{feature-name}-spec.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+
+### 返回编排器
+
+完成所有工作后，输出以下格式的状态信息（不要包含其他内容）：
+
+```
+[STATUS: success | partial | failed]
+[OUTPUT: {feature-name}-spec.md]
+[WARNINGS: 警告列表，没有则为 none]
+[ISSUES: 阻塞问题列表，没有则为 none]
+[SUMMARY: 一句话摘要]
+```

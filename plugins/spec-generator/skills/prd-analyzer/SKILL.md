@@ -123,4 +123,19 @@ PRD 有多种格式，需要适配提取方法。
 
 1. 按模板结构填充分析结果
 2. 使用 Write 工具写入文件
-3. 使用 Read 工具回读文件，验证内容完整写入
+
+### 质量门禁自检
+
+读取 `plugins/spec-generator/skills/prd-analyzer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/prd-analysis.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+
+### 返回编排器
+
+完成所有工作后，输出以下格式的状态信息（不要包含其他内容）：
+
+```
+[STATUS: success | partial | failed]
+[OUTPUT: prd-analysis.md]
+[WARNINGS: 警告列表，没有则为 none]
+[ISSUES: 阻塞问题列表，没有则为 none]
+[SUMMARY: 一句话摘要]
+```
