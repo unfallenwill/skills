@@ -75,7 +75,7 @@ allowed-tools:
 7. **测试模式** — 单元测试框架、测试文件位置、断言风格
 
 详细分析模式和示例，参考：
-- **`plugins/spec-generator/skills/codebase-mapper/references/analysis-patterns.md`** — 常见项目类型的详细模式
+- **`${CLAUDE_PLUGIN_ROOT}/skills/codebase-mapper/references/analysis-patterns.md`** — 常见项目类型的详细模式
 
 ### 步骤 5：映射依赖关系
 
@@ -97,14 +97,14 @@ allowed-tools:
 
 ### 写入产出
 
-使用 `plugins/spec-generator/skills/codebase-mapper/references/output-template.md` 作为结构模板，将上下文分析结果写入 `$ARGUMENTS/codebase-mapping.md`：
+使用 `${CLAUDE_PLUGIN_ROOT}/skills/codebase-mapper/references/output-template.md` 作为结构模板，将上下文分析结果写入 `$ARGUMENTS/codebase-mapping.md`：
 
 1. 按模板结构填充映射结果
 2. 使用 Write 工具写入文件
 
 ### 质量门禁自检
 
-读取 `plugins/spec-generator/skills/codebase-mapper/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/codebase-mapping.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+读取 `${CLAUDE_PLUGIN_ROOT}/skills/codebase-mapper/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/codebase-mapping.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
 
 ### 返回编排器
 

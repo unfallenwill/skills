@@ -104,7 +104,7 @@ F{n}: <功能名称>
 PRD 有多种格式，需要适配提取方法。
 
 不同 PRD 格式的详细提取策略，参考：
-- **`plugins/spec-generator/skills/prd-analyzer/references/extraction-patterns.md`** — 结构化、自由文本和混合 PRD 的详细提取模式
+- **`${CLAUDE_PLUGIN_ROOT}/skills/prd-analyzer/references/extraction-patterns.md`** — 结构化、自由文本和混合 PRD 的详细提取模式
 
 ## 歧义检测
 
@@ -120,14 +120,14 @@ PRD 有多种格式，需要适配提取方法。
 
 ### 写入产出
 
-使用 `plugins/spec-generator/skills/prd-analyzer/references/output-template.md` 作为结构模板，将提取的分析结果写入 `$ARGUMENTS/prd-analysis.md`：
+使用 `${CLAUDE_PLUGIN_ROOT}/skills/prd-analyzer/references/output-template.md` 作为结构模板，将提取的分析结果写入 `$ARGUMENTS/prd-analysis.md`：
 
 1. 按模板结构填充分析结果
 2. 使用 Write 工具写入文件
 
 ### 质量门禁自检
 
-读取 `plugins/spec-generator/skills/prd-analyzer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/prd-analysis.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+读取 `${CLAUDE_PLUGIN_ROOT}/skills/prd-analyzer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/prd-analysis.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
 
 ### 返回编排器
 

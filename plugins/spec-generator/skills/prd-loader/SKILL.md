@@ -106,7 +106,7 @@ loaded-at: <加载时间>
 
 ### 质量门禁自检
 
-读取 `plugins/spec-generator/skills/prd-loader/references/quality-gate.md`，逐项核对产出物 `{workspace}/prd-source.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+读取 `${CLAUDE_PLUGIN_ROOT}/skills/prd-loader/references/quality-gate.md`，逐项核对产出物 `{workspace}/prd-source.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
 
 ### 返回编排器
 

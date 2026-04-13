@@ -107,14 +107,14 @@ allowed-tools:
 
 ### 写入产出
 
-使用 `plugins/spec-generator/skills/spec-reviewer/references/review-report-template.md` 作为结构模板，将审查报告写入 `$ARGUMENTS/review-report.md`：
+使用 `${CLAUDE_PLUGIN_ROOT}/skills/spec-reviewer/references/review-report-template.md` 作为结构模板，将审查报告写入 `$ARGUMENTS/review-report.md`：
 
 1. 按模板结构填充审查结果（概要、覆盖度分析表、关键问题、改进建议）
 2. 使用 Write 工具写入文件
 
 ### 质量门禁自检
 
-读取 `plugins/spec-generator/skills/spec-reviewer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/review-report.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
+读取 `${CLAUDE_PLUGIN_ROOT}/skills/spec-reviewer/references/quality-gate.md`，逐项核对产出物 `$ARGUMENTS/review-report.md` 是否满足所有验收标准。如有未通过的项，使用 Edit 工具修复产出文件后重新核对。最多重试 2 次，仍未通过则将未通过项记入返回状态的 issues 中。
 
 ### 返回编排器
 

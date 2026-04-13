@@ -1,10 +1,9 @@
 ---
 name: spec-generator
 description: >
-  当用户要求 "生成规格文档", "把 PRD 转成规格文档", "convert PRD to spec",
-  "从 PRD 生成实现方案", "生成 spec", "写一个实现规格", "create implementation spec",
-  "准备 PRD 给 agent 执行", 或执行 /spec-generator 命令时使用。
   将产品需求文档（PRD）转化为精确的、编码 Agent 可直接执行的实现规格文档。
+  触发：用户要生成 spec / 规格文档 / 实现方案，或要把 PRD 转成可执行规格。
+  不触发：写 PRD、改 PRD、代码 review、或非文档生成任务。
 argument-hint: "<PRD 来源：文件路径 | 文本内容>"
 allowed-tools:
   - Read
