@@ -42,7 +42,7 @@
       "name": "spec-generator",
       "source": "./plugins/spec-generator",
       "description": "将 PRD 产品需求文档转化为 Coding Agent 可直接执行的精确实现规格文档",
-      "version": "0.6.1"
+      "version": "0.7.0"
     }
   ]
 }

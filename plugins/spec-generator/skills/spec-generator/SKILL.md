@@ -31,28 +31,20 @@ allowed-tools:
 
 ### 初始化
 
-1. 解析用户输入，确定 PRD 来源（文件路径 / 内联文本）
-2. 从 PRD 来源中提取 `{feature-name}`（从文件名、PRD 标题或用户指定获取）
-3. 使用 Bash 工具生成 6 位随机字符：`openssl rand -hex 3`
-4. 创建工作目录：`mkdir -p specs/{feature-name}-spec-{随机字符}/`
-5. 定义 `{workspace}` 变量为工作目录的绝对路径
-6. 将 PRD 来源信息写入 `{workspace}/.input.md`：
-   ```markdown
-   ---
-   source-type: file-path | inline-text
-   source-ref: <文件路径 | inline>
-   feature-name: <功能名称>
-   ---
-   <如果是内联文本，PRD 内容写在此处；否则留空>
-   ```
-7. 使用 TaskCreate 创建 5 个 task
+1. 使用 Bash 工具生成 6 位随机字符：`openssl rand -hex 3`
+2. 创建工作目录：`mkdir -p specs/spec-{随机字符}/`
+3. 定义 `{workspace}` 变量为工作目录的绝对路径
+4. 使用 TaskCreate 创建 5 个 task
 
 ### 调度循环
 
 对每个步骤，执行以下流程：
 
 ```
-调用子 skill，传入 {workspace} 绝对路径作为参数
+调用子 skill：
+  Task 1 (prd-loader): 传入 "{workspace} {用户原始输入}" 作为参数
+  其他 Task: 传入 {workspace} 绝对路径作为参数
+
 读取子 skill 返回值中的 [STATUS] 字段：
   success → TaskUpdate completed → 如果有检查点，展示 [SUMMARY] 并等待用户确认 → 下一步
   partial → 展示 [SUMMARY] 和 [WARNINGS]，AskUserQuestion 询问：
@@ -63,6 +55,8 @@ allowed-tools:
     用户选择重试 → 重新调用当前步骤的子 skill
     用户放弃 → 终止工作流
 
+Task 1 完成后，从返回值中读取 [FEATURE-NAME]，供后续步骤引用。
+
 检查点步骤: Task 2 (prd-analyzer), Task 3 (codebase-mapper), Task 5 (spec-reviewer)
 无检查点步骤: Task 1 (prd-loader), Task 4 (spec-creator)
 ```
@@ -71,7 +65,7 @@ allowed-tools:
 
 | 步骤 | 内部 skill | 输入文件 | 输出文件 | 检查点 |
 |------|-----------|----------|----------|--------|
-| Task 1: 加载 PRD | `prd-loader` | `.input.md` | `prd-source.md` | — |
+| Task 1: 加载 PRD | `prd-loader` | 用户原始输入 | `prd-source.md` | — |
 | Task 2: PRD 分析 | `prd-analyzer` | `prd-source.md` | `prd-analysis.md` | 用户确认分析结果 |
 | Task 3: 代码库映射 | `codebase-mapper` | `prd-analysis.md` | `codebase-mapping.md` | 用户确认映射结果 |
 | Task 4: 生成规格 | `spec-creator` | `prd-analysis.md` + `codebase-mapping.md` | `{feature-name}-spec.md` | — |
@@ -109,11 +103,13 @@ allowed-tools:
 
 本工作流的内部 skill（`prd-loader`、`prd-analyzer`、`codebase-mapper`、`spec-creator`、`spec-reviewer`）不为用户独立调用而设计。编排器通过以下方式使用它们：
 
-1. 使用 **Skill 工具** 调用 `{skill-name}`，传入 `{workspace}` 绝对路径作为参数
+1. 使用 **Skill 工具** 调用 `{skill-name}`
+   - `prd-loader`：传入 `{workspace} {用户原始输入}`
+   - 其他子 skill：传入 `{workspace}` 绝对路径
 2. 各步骤 skill 均设置了 `context: fork`，在独立的上下文窗口中执行
-3. 子代理通过 `$ARGUMENTS` 获取工作目录路径，从文件读取输入、写入产出文件
-4. 子代理完成后返回结构化状态：`[STATUS]`、`[OUTPUT]`、`[WARNINGS]`、`[ISSUES]`、`[SUMMARY]`
-   - 编排器仅消费 `[STATUS]`、`[SUMMARY]`、`[WARNINGS]`、`[ISSUES]`，`[OUTPUT]` 字段用于日志和调试
+3. 子代理通过 `$ARGUMENTS` 获取参数，从文件读取输入、写入产出文件
+4. 子代理完成后返回结构化状态：`[STATUS]`、`[OUTPUT]`、`[FEATURE-NAME]`、`[WARNINGS]`、`[ISSUES]`、`[SUMMARY]`
+   - 编排器仅消费 `[STATUS]`、`[FEATURE-NAME]`、`[SUMMARY]`、`[WARNINGS]`、`[ISSUES]`，`[OUTPUT]` 字段用于日志和调试
 5. 编排器根据返回状态做调度决策，不做质量门禁核对
 
 ## 依赖
