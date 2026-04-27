@@ -31,13 +31,36 @@ tools:
 
 如果用户没有提供端点，用 AskUserQuestion 询问。
 
+## 关键概念：collection-name 与 endpoint-name
+
+**collection-name**（资源名）：从 API 路径中提取的资源名称，决定输出目录和 Collection 文件名。
+
+推导规则：
+1. 如果用户指定了名称，优先使用
+2. 否则从路径提取第一个资源段（去掉 `/api`、`/v1` 等前缀和动态参数段）
+3. 多个端点共享同一个资源名 → 归入同一个 Collection
+
+示例：
+| API 路径 | collection-name | endpoint-name |
+|----------|----------------|---------------|
+| `POST /api/users` | `users` | `注册` |
+| `POST /api/users/login` | `users` | `登录` |
+| `POST /api/users/forgot-password` | `users` | `找回密码` |
+| `GET /api/users/:id` | `users` | `获取用户详情` |
+| `PUT /api/orders/:id` | `orders` | `更新订单` |
+
+**endpoint-name**（端点名）：当前端点的语义名称，用于 Collection 内的 folder 分组。从 HTTP 方法 + 路径 + handler 函数名推导。
+
 ## 工作流
 
 ### Phase 0: 检测模式
 
-根据 `$ARGUMENTS` 推导 `collection-name`（如 `POST /api/users` → `users`），检查 `postman/{collection-name}/` 是否已存在：
-- **已存在** → 告知用户 "更新 `{collection-name}` 测试用例"，直接覆盖重新生成
-- **不存在** → 正常新建
+1. 从 `$ARGUMENTS` 推导 `collection-name` 和 `endpoint-name`
+2. 检查 `postman/{collection-name}/` 是否已存在
+   - **已存在** → 读取现有 Collection JSON，提取已有 endpoint-name 列表
+     - 当前 endpoint-name **已存在** → 告知用户 "更新 `{endpoint-name}` 的测试用例"，替换该 folder 下的用例，保留其他 folder
+     - 当前 endpoint-name **不存在** → 告知用户 "为 `{collection-name}` 添加 `{endpoint-name}` 的测试用例"，追加新 folder
+   - **不存在** → 正常新建
 
 ### Phase 1: 识别项目类型并定位 API 代码
 
@@ -85,14 +108,14 @@ tools:
 
 6. **输出接口规格文档**
 
-   将提取结果整理为结构化的接口规格。
+   将提取结果整理为结构化的接口规格，写入 `postman/{collection-name}/api-spec.md`。
 
-   **确定输出目录**：根据 API 路径生成目录名，格式为 `postman/{collection-name}/`。`collection-name` 从 API 路径推导（如 `POST /api/users` → `users`，`GET /api/orders/:id` → `orders`）。如果用户指定了名称，优先使用用户指定的名称。所有后续文件都输出到该目录下。
-
-   写入 `postman/{collection-name}/api-spec.md`。
+   - **新建**：写入完整规格
+   - **追加端点**：在文件末尾追加新端点的规格段落
+   - **更新端点**：替换对应端点的规格段落
 
    ```markdown
-   # API 接口规格: {METHOD} {PATH}
+   # API 接口规格: {endpoint-name} ({METHOD} {PATH})
 
    ## 基本信息
    - HTTP 方法:
@@ -155,9 +178,11 @@ tools:
 - 示例：创建 → 获取 → 更新 → 删除
 
 将设计的用例写入 `postman/{collection-name}/test-cases.md`：
+- **新建**：写入完整用例文档
+- **追加/更新端点**：在对应端点的段落下追加或替换用例
 
 ```markdown
-# 测试用例: {METHOD} {PATH}
+# 测试用例: {endpoint-name} ({METHOD} {PATH})
 
 ## 正向测试
 ### TC-POS-001: [用例名称]
@@ -183,37 +208,48 @@ tools:
 读取 `${CLAUDE_PLUGIN_ROOT}/skills/postman-builder/references/collection-schema.md` 和 `${CLAUDE_PLUGIN_ROOT}/skills/postman-builder/references/assertion-templates.md`。
 
 1. **生成 Collection JSON** — 符合 Postman v2.1.0 schema
-2. **按 folder 分组**：
+
+2. **按 endpoint-name 分组**，每个 endpoint 下再按测试类别分子 folder：
    ```
-   Collection
-   ├── 正向测试/
-   │   ├── TC-POS-001: ...
-   │   └── TC-POS-002: ...
-   ├── 参数校验/
-   │   ├── TC-VAL-001: 必填字段缺失-username
-   │   ├── TC-VAL-002: 类型错误-age传字符串
-   │   └── ...
-   ├── 安全测试/
-   │   ├── TC-SEC-001: 未认证访问
-   │   └── TC-SEC-002: XSS注入
-   └── 链路测试/（如适用）
-       └── TC-CHAIN-001: CRUD完整链路
+   Collection (users)
+   ├── 注册 (POST /api/users)/
+   │   ├── 正向测试/
+   │   │   └── TC-POS-001: 正常注册
+   │   ├── 参数校验/
+   │   │   ├── TC-VAL-001: 必填字段缺失-username
+   │   │   └── TC-VAL-002: 格式非法-email
+   │   └── 安全测试/
+   │       └── TC-SEC-001: XSS注入
+   ├── 登录 (POST /api/users/login)/
+   │   ├── 正向测试/
+   │   │   └── TC-POS-001: 正常登录
+   │   └── 安全测试/
+   │       ├── TC-SEC-001: 未认证访问
+   │       └── TC-SEC-002: 密码错误
+   └── 找回密码 (POST /api/users/forgot-password)/
+       └── ...
    ```
 
-3. **每个 request item 包含**：
+3. **合并策略**：
+   - **新建**：创建完整 Collection JSON
+   - **追加端点**：读取现有 Collection JSON，在 `item` 数组中追加新的 endpoint folder
+   - **更新端点**：读取现有 Collection JSON，在 `item` 数组中找到同名 endpoint folder，替换其内容，保留其他 folder 不变
+
+4. **每个 request item 包含**：
    - 正确的 HTTP method、URL（含变量 `{{baseUrl}}`）
    - Headers（Content-Type、Authorization 模板）
    - Request body（根据用例构造的 JSON）
    - Pre-request Script：设置时间戳、变量初始化
    - Tests Script：分层断言（状态码 → 响应体结构 → 字段值 → 变量提取）
 
-4. **生成 Environment 文件**：`baseUrl`、`authToken` 变量
+5. **生成 Environment 文件**（仅在新建时创建，已存在则跳过）：
+   - `baseUrl`、`authToken` 变量
 
-5. **输出文件**（所有文件都在同一个隔离目录下）：
+6. **输出文件**（所有文件都在同一个隔离目录下）：
    - `postman/{collection-name}/{collection-name}.postman_collection.json`
-   - `postman/{collection-name}/dev.postman_environment.json`
+   - `postman/{collection-name}/dev.postman_environment.json`（仅新建时）
 
-6. **验证 JSON 格式**：运行 `python3 -c "import json; json.load(open('postman/{collection-name}/...'))"` 确保合法
+7. **验证 JSON 格式**：运行 `python3 -c "import json; json.load(open('postman/{collection-name}/...'))"` 确保合法
 
 ### Phase 5: 输出总结
 
