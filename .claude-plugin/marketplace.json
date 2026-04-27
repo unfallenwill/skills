@@ -43,6 +43,12 @@
       "source": "./plugins/quickspec",
       "description": "将 PRD 产品需求文档转化为 Coding Agent 可直接执行的精确实现规格文档",
       "version": "0.8.0"
+    },
+    {
+      "name": "code-postman",
+      "source": "./plugins/code-postman",
+      "description": "从代码库逆向分析 API 并生成 Postman 测试集：正向、反向、边界、安全用例",
+      "version": "0.1.0"
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "code-postman",
+  "version": "0.1.0",
+  "description": "从代码库逆向分析 API 并生成 Postman 测试集：正向、反向、边界、安全用例",
+  "author": {
+    "name": "hicaosen"
+  },
+  "tags": ["postman", "testing", "api", "code-analysis", "test-generation"]
+}
