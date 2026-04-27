@@ -33,18 +33,11 @@ tools:
 
 ## 工作流
 
-### Phase 0: 检测更新模式
+### Phase 0: 检测模式
 
-在开始分析前，检查输出目录是否已存在：
-
-1. 根据 `$ARGUMENTS` 推导 `collection-name`（如 `POST /api/users` → `users`）
-2. 检查 `postman/{collection-name}/api-spec.md` 是否存在
-3. **如果已存在** → 进入**更新模式**：
-   - 读取旧的 `api-spec.md` 内容，用于后续与新生成的 spec 对比
-   - 告知用户："检测到 `{collection-name}` 已有测试用例，将对比代码变更并更新"
-4. **如果不存在** → 进入**新建模式**，正常执行 Phase 1-5
-
-更新模式下的行为差异会在各 Phase 中标注 `[更新模式]`。
+根据 `$ARGUMENTS` 推导 `collection-name`（如 `POST /api/users` → `users`），检查 `postman/{collection-name}/` 是否已存在：
+- **已存在** → 告知用户 "更新 `{collection-name}` 测试用例"，直接覆盖重新生成
+- **不存在** → 正常新建
 
 ### Phase 1: 识别项目类型并定位 API 代码
 
@@ -96,19 +89,7 @@ tools:
 
    **确定输出目录**：根据 API 路径生成目录名，格式为 `postman/{collection-name}/`。`collection-name` 从 API 路径推导（如 `POST /api/users` → `users`，`GET /api/orders/:id` → `orders`）。如果用户指定了名称，优先使用用户指定的名称。所有后续文件都输出到该目录下。
 
-   写入 `postman/{collection-name}/api-spec.md`：
-
-   **[更新模式]** 对比新旧 spec，生成变更摘要并告知用户：
-   ```markdown
-   ## 变更检测（对比上次生成）
-   | 类型 | 变更项 | 旧值 | 新值 |
-   |------|--------|------|------|
-   | 新增字段 | phone | - | string, required, min=11, max=11 |
-   | 删除字段 | nickname | string, optional | - |
-   | 修改规则 | username.max | 30 | 50 |
-   | 未变化 | email | - | - |
-   ```
-   变更类型：新增字段、删除字段、修改类型、修改校验规则、修改鉴权方式、修改响应结构。未变化的字段标注"未变化"。
+   写入 `postman/{collection-name}/api-spec.md`。
 
    ```markdown
    # API 接口规格: {METHOD} {PATH}
@@ -238,11 +219,9 @@ tools:
 
 向用户展示：
 1. 分析的接口规格摘要
-2. **[更新模式]** 变更摘要：新增/删除/修改了哪些字段和规则
-3. 生成的测试用例数量和分类
-4. **[更新模式]** 受变更影响的测试用例列表（新增的用例、已删除的用例、需更新的用例）
-5. 输出文件路径
-6. 如何导入 Postman 使用
+2. 生成的测试用例数量和分类
+3. 输出文件路径
+4. 如何导入 Postman 使用
 
 ## 约束
 
