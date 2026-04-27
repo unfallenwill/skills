@@ -40,7 +40,7 @@ tools:
 1. 根据 `$ARGUMENTS` 推导 `collection-name`（如 `POST /api/users` → `users`）
 2. 检查 `postman/{collection-name}/api-spec.md` 是否存在
 3. **如果已存在** → 进入**更新模式**：
-   - 读取旧的 `api-spec.md` 保存为 `old-spec`
+   - 读取旧的 `api-spec.md` 内容，用于后续与新生成的 spec 对比
    - 告知用户："检测到 `{collection-name}` 已有测试用例，将对比代码变更并更新"
 4. **如果不存在** → 进入**新建模式**，正常执行 Phase 1-5
 
