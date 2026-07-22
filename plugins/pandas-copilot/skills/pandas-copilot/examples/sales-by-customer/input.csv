@@ -1,0 +1,11 @@
+order_id,customer,product,amount,date
+1,Alice,Premium Widget,150.00,2025-01-15
+2,Bob,Standard Gadget,75.50,2025-01-16
+3,Alice,Basic Tool,45.00,2025-01-17
+4,Carol,Premium Widget,150.00,2025-01-18
+5,Bob,Advanced Kit,220.00,2025-01-19
+6,Alice,Standard Gadget,75.50,2025-01-20
+7,Carol,Basic Tool,45.00,2025-01-21
+8,David,Advanced Kit,220.00,2025-01-22
+9,Bob,Premium Widget,150.00,2025-01-23
+10,Alice,Advanced Kit,220.00,2025-01-24

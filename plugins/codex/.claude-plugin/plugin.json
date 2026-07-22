@@ -1,0 +1,5 @@
+{
+  "name": "codex",
+  "description": "Codex coding agent based on GPT-5 with strong engineering judgment and proactive collaboration",
+  "version": "1.0.0"
+}

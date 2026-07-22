@@ -1,0 +1,23 @@
+{
+  "name": "treadonsnow-skills",
+  "owner": {
+    "name": "caosen"
+  },
+  "metadata": {
+    "description": "A collection of Claude Code plugins: Skills, Slash Commands, Hooks, and Agents."
+  },
+  "plugins": [
+    {
+      "name": "codex",
+      "source": "./plugins/codex",
+      "description": "A Codex coding agent based on GPT-5 — a proactive coding collaborator with strong engineering judgment.",
+      "version": "1.0.0"
+    },
+    {
+      "name": "pandas-copilot",
+      "source": "./plugins/pandas-copilot",
+      "description": "Use pandas without knowing pandas: provide data (primarily Excel) and a validation standard, and get a verified, repeatable data-processing script or notebook.",
+      "version": "0.1.0"
+    }
+  ]
+}
