@@ -1,5 +1,12 @@
 # Excel Data Source Pitfalls and Mitigations
 
+**The one rule behind every case below: a cell's displayed value is not its
+stored value.** Excel layers format, formulas, merged cells, and hidden rows on
+top of raw storage, and pandas reads the raw storage. So before trusting any
+Excel read, do a test-read and inspect the real dtypes and raw values — then run
+`excel_health_check()` at the end of this file for a quick diagnosis. The ten
+sections below are indexed examples of that rule, not unrelated special cases.
+
 ## 1. Multiple Sheet Handling
 
 ### Symptom
@@ -29,13 +36,12 @@ df2 = pd.read_excel('/path/to/file.xlsx', sheet_name=1)
 # Read all sheets, returns {sheet_name: DataFrame} dict
 all_sheets = pd.read_excel('/path/to/file.xlsx', sheet_name=None)
 
-# Merge multiple sheets (same structure)
-dfs = []
-for sheet in sheet_names:
-    df = pd.read_excel('/path/to/file.xlsx', sheet_name=sheet)
-    df['_source_sheet'] = sheet  # Track source
-    dfs.append(df)
-combined = pd.concat(dfs, ignore_index=True)
+# Merge multiple sheets (same structure) — read once, not once per sheet
+all_sheets = pd.read_excel('/path/to/file.xlsx', sheet_name=None)
+combined = pd.concat(
+    [df.assign(_source_sheet=name) for name, df in all_sheets.items()],
+    ignore_index=True,
+)
 
 # Read only specified sheets
 selected = pd.read_excel('/path/to/file.xlsx', sheet_name=['Sheet1', 'Sheet3'])
@@ -323,28 +329,10 @@ for row in ws.iter_rows(min_row=2, max_row=10):
         if cell.data_type == 'f':  # Formula cell
             print(f"Cell {cell.coordinate} formula: {cell.value}")
 
-# Method 3: Open and save file first (trigger formula calculation), then read
-import subprocess
-# Windows
-subprocess.run(['start', '', '/wait', 'path/to/file.xlsx'], shell=True)
-# macOS
-# subprocess.run(['open', '/path/to/file.xlsx'])
-# Then read with pandas
-
-# Exploration phase: detect if file has formula cells
-def has_formulas(file_path):
-    wb = load_workbook(file_path, data_only=False)
-    for sheet in wb:
-        for row in sheet.iter_rows():
-            for cell in row:
-                if cell.data_type == 'f':
-                    return True
-    return False
-
-# Usage recommendation: if exploration finds formulas, advise user:
-# 1. Confirm whether formula results or formulas themselves are needed
-# 2. If results needed, open and save in Excel first
-# 3. If formulas needed, use openpyxl to extract manually
+# If cells read as None in a file that should have values, the formulas were
+# never calculated — ask the user to open and save the file in Excel first,
+# then re-read. Confirm whether formula results or the formulas themselves are
+# needed; if formulas, extract them manually with openpyxl as above.
 ```
 
 ---
@@ -371,9 +359,6 @@ df = pd.read_excel('/path/to/file.xlsx', engine='openpyxl')
 
 # Legacy .xls files: use xlrd (note xlrd>=2.0 required)
 df = pd.read_excel('/path/to/file.xls', engine='xlrd')
-
-# xlrd < 2.0 also supports .xlsx (but openpyxl recommended)
-# df = pd.read_excel('/path/to/file.xlsx', engine='xlrd')
 
 # Auto-detection (pandas default behavior)
 df = pd.read_excel('/path/to/file.xlsx')  # Auto-selects openpyxl (if installed)
@@ -442,26 +427,10 @@ for info in structure_info:
     print(f"  Hidden columns: {info['hidden_cols']}")
     print(f"  Merged cells count: {info['merged_cells']}")
 
-# Handling: if hidden columns found, ask user if needed
-# pandas cannot directly read hidden columns, need openpyxl manual extraction
-
-def read_hidden_columns(path, sheet_name, hidden_cols):
-    wb = load_workbook(path, data_only=True)
-    ws = wb[sheet_name]
-    data = []
-    for row in ws.iter_rows(values_only=True):
-        row_data = []
-        for idx, cell in enumerate(row):
-            col_letter = chr(65 + idx)  # A, B, C...
-            if col_letter in hidden_cols:
-                row_data.append(cell)
-        data.append(row_data)
-    return pd.DataFrame(data[1:], columns=data[0])
-
-# Recommended exploration workflow:
-# 1. First read with pandas, check data shape
-# 2. Use openpyxl to check hidden/merge info
-# 3. If anomalies found, report to user and ask for handling strategy
+# Handling: pandas cannot read hidden columns directly. If the exploration above
+# finds hidden columns the user actually needs, extract them with openpyxl and
+# `openpyxl.utils.get_column_letter` (do not hand-roll column letters — `chr(65+i)`
+# is wrong past column Z). Report anomalies and agree on a strategy with the user.
 ```
 
 ---
@@ -483,8 +452,8 @@ def excel_health_check(path):
     if len(xlsx.sheet_names) > 1:
         issues.append(f"Multi-sheet file: {xlsx.sheet_names}")
 
-    # 2. Test-read first sheet to check data types
-    df = pd.read_excel(path, nrows=20)
+    # 2. Test-read first sheet to check data types (reuse the open handle)
+    df = xlsx.parse(0, nrows=20)
     for col in df.columns:
         if df[col].dtype == 'object':
             # Check if serial numbers (integer column)

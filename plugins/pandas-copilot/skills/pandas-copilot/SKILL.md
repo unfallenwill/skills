@@ -54,12 +54,10 @@ adapting to the host platform (macOS / Linux / Windows PowerShell) and whatever
 tooling is available. There is intentionally no fixed bootstrap script — decide
 the concrete commands yourself from the guide.
 
-The guide's precedence is `uv` > `poetry` (existing project only) > `python -m
-venv`. Create a `.venv` in the **current working directory**, install `pandas`,
-`openpyxl`, `jupyter`, `nbformat`, and resolve the venv interpreter path (POSIX
-`.venv/bin/python`, Windows `.venv\Scripts\python.exe`). Use that path for every
-pandas execution that follows; never use the global Python. If none of
-uv/poetry/python is available, tell the user to install one and retry.
+The guide is the single source for tool precedence, the dependency list, and
+the platform-specific venv interpreter path — capture that interpreter path and
+reuse it for every pandas execution that follows; never use the global Python.
+If none of uv/poetry/python is available, tell the user to install one and retry.
 
 ### Stage 2 — Profile the data
 
@@ -105,19 +103,19 @@ script is self-checking.
 
 ### Stage 5 — Run + verify
 
-Execute the script with the venv interpreter captured in Stage 1. Classify the
-outcome:
+Execute the script with the venv interpreter captured in Stage 1, then classify
+the outcome:
 
-- Execution error (traceback) → fix the script logic.
-- `assert` failure → fix the processing logic, or revisit gate A if the
-  validation design itself was wrong.
-- All checks pass → proceed to Stage 7.
+- Execution error or `assert` failure → proceed to Stage 6.
+- All checks pass → proceed to Stage 7 (gate B).
 
 ### Stage 6 — Iterate
 
-On failure, analyze, fix, and rerun until all checks pass. After several failed
+On failure, analyze and fix: an execution error points at the script logic; an
+`assert` failure points at the processing logic — or, if the validation design
+itself was wrong, revisit gate A. Rerun and reclassify. After several failed
 rounds, fall back to gate A and realign the understanding rather than blind
-trial and error.
+trial and error. When all checks pass → proceed to Stage 7.
 
 ### Stage 7 — Show real results [Gate B]
 
@@ -135,22 +133,20 @@ the current working directory with a name reflecting the task.
 
 ## Key Rules
 
-- **Language follows the user**: comments and markdown explanations in generated
-  code/notebooks always follow the end user's language.
-- **Environment isolation**: all execution goes through the local `.venv`; never
-  touch the global environment.
-- **Never decide for the user**: both gates require explicit user confirmation;
-  do not confirm on the user's behalf.
+The three Core Principles above govern every stage. One operational rule is
+worth calling out on its own:
+
 - **Open feedback**: if the user challenges or gives feedback at any stage, fall
   back to the relevant stage and redo; do not resist.
 
 ## Resources
 
-Load on demand to keep this file lean:
+Load on demand to keep this file lean — each stage above says when to reach for
+a reference:
 
-- **`references/pandas-patterns.md`** — common pandas patterns and idioms (when writing the script)
-- **`references/validation-strategies.md`** — turning validation into checks: sample generalization, natural-language → check tables (for gate A and embedded checks)
-- **`references/excel-gotchas.md`** — Excel-specific traps and fixes (when profiling and reading)
-- **`references/env-setup.md`** — how to set up the isolated `.venv` on any platform (macOS/Linux/PowerShell), install deps, and resolve the venv interpreter (use in Stage 1)
+- `references/env-setup.md`
+- `references/pandas-patterns.md`
+- `references/validation-strategies.md`
+- `references/excel-gotchas.md`
 
 A concrete end-to-end reference lives in **`examples/sales-by-customer/`** — input, expected output, the user prompt, and a sample generated notebook. Consult it in Stage 4/8 to match the intended deliverable shape (markdown walkthrough + embedded `assert` checks).

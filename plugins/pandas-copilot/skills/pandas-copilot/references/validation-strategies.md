@@ -2,9 +2,7 @@
 
 **Target audience**: Claude (AI), for designing validation approaches during "guided validation" and "run+verify" phases.
 
-**Core principles**:
-- **Sample data is for inferring rules, not for copying verbatim**: Users provide "input → output" examples; Claude must infer the underlying transformation rules (which columns changed, how they changed) and write validations that generalize to arbitrary inputs, rather than hardcoding cell-by-cell comparisons against the sample. Otherwise scripts only work for the sample data and fail on new data.
-- **Validation must be executable**: Convert to `assert` or boolean checks that can run and return pass/fail.
+**Core principles**: the Core Principles in `SKILL.md` apply here — samples are for inferring rules (never hardcode cell-by-cell comparisons against the sample), and every validation must be executable (an `assert` or boolean check that returns pass/fail).
 
 ---
 
@@ -214,48 +212,18 @@ User input: "amount column all positive"
 
 ---
 
-## 4. Common Validation Dimensions
+## 4. Validation Dimensions Checklist
 
-### 4.1 Count Conservation
+When designing a gate-A plan, use this as a coverage checklist — each dimension
+maps to the ready-made pandas expressions in §3, so don't re-derive them here:
 
-- **Row count**: `len(df) == len(raw)` (filtering scenario)
-- **Sum conservation**: `df['amount'].sum() == raw['amount'].sum()` (aggregation scenario)
-- **Group conservation**: `df.groupby('key').ngroups == raw['key'].nunique()` (deduplication scenario)
-
-### 4.2 Key Uniqueness
-
-- **Primary key unique**: `df['id'].is_unique`
-- **Composite key unique**: `df.duplicated(subset=['col1', 'col2']).sum() == 0`
-
-### 4.3 Value Domain
-
-- **Enum constraint**: `df['status'].isin(['A', 'B', 'C']).all()`
-- **Range constraint**: `df['age'].between(0, 120).all()`
-- **Non-negative constraint**: `(df['value'] >= 0).all()`
-
-### 4.4 Nulls
-
-- **No nulls globally**: `df.isna().sum().sum() == 0`
-- **Key column no nulls**: `df['id'].isna().sum() == 0`
-- **Allowed null positions**: `df['optional_col'].isna().sum() >= 0` (descriptive only, no assert)
-
-### 4.5 Types
-
-- **Numeric type**: `pd.api.types.is_numeric_dtype(df['col'])`
-- **Date type**: `pd.api.types.is_datetime64_any_dtype(df['col'])`
-- **String type**: `pd.api.types.is_string_dtype(df['col'])`
-
-### 4.6 Cross-table/Cross-column Consistency
-
-- **Cross-table key consistency**: `set(df1['id']) == set(df2['id'])`
-- **Cross-column logic**: `(df['start'] < df['end']).all()`
-- **Parent-child constraint**: `set(df_child['parent_id']).issubset(set(df_parent['id']))`
-
-### 4.7 Business Rules
-
-- **Conditional constraint**: `((df['type'] != 'premium') | (df['feature'] == 'advanced')).all()`
-- **Time window**: `(df['end'] - df['start']).dt.days <= 30`
-- **Ratio constraint**: `(df['part'] / df['total'] <= 0.1).all()`
+- **Count conservation** (§3.3) — row counts and column sums before vs after.
+- **Key uniqueness** (§3.1) — primary/composite keys are unique.
+- **Value domain** (§3.2, §3.7) — enums, ranges, non-negativity.
+- **Nulls** (§3.1) — none where they aren't allowed.
+- **Types** (§3.5) — numeric/date/string as required.
+- **Cross-table/column consistency** (§3.6) — key sets, start ≤ end, parent-child.
+- **Aggregation statistics** (§3.8) — means, group sizes, maxima within bounds.
 
 ---
 

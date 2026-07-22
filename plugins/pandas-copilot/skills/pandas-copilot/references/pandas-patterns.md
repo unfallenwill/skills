@@ -4,22 +4,10 @@
 
 ### Excel Reading
 
-```python
-# Read specific sheet with header row, column types, and NA markers
-df = pd.read_excel(
-    'data.xlsx',
-    sheet_name='Sheet1',        # sheet name or index (0-based)
-    header=0,                   # header row index, default 0
-    dtype={'col1': str, 'col2': int},  # specify column types
-    converters={'date_col': pd.to_datetime},  # column conversion functions
-    na_values=['NA', 'N/A', 'null'],  # values to recognize as NaN
-    skiprows=1,                 # number of rows to skip at top
-    thousands=',',              # thousands separator
-)
-
-# Read multiple sheets into dictionary
-sheets = pd.read_excel('data.xlsx', sheet_name=['Sheet1', 'Sheet2'])
-```
+For Excel input, see `excel-gotchas.md` — it has the read parameters
+(`sheet_name`, `header`, `dtype`, `converters`, `na_values`, `skiprows`,
+`thousands`) grouped by the trap each one defends against, plus defensive
+defaults. Don't re-derive them here.
 
 ### CSV/JSON Reading
 
@@ -241,3 +229,35 @@ df.apply(lambda col: col.max(), axis=0)      # column-wise apply
 # ❌ Avoid: for idx, row in df.iterrows(): ...
 # ✅ Prefer: df['new'] = df['col'].str.upper()
 ```
+
+## Script Layout for This Skill
+
+The generated script/notebook follows this shape — parameterized paths,
+processing, then **embedded validation**, then save. Comments follow the user's
+language (placeholder here).
+
+```python
+import pandas as pd
+
+# Paths are parameters, not hardcoded throwaway values
+INPUT_PATH = "input.xlsx"
+OUTPUT_PATH = "output.csv"
+
+# --- Read (use the defensive Excel params from excel-gotchas.md) ---
+df = pd.read_excel(INPUT_PATH, dtype={"id": str})
+
+# --- Process (vectorized, idiomatic pandas) ---
+result = (
+    df.groupby("customer", as_index=False)
+      .agg(total=("amount", "sum"), orders=("order_id", "count"))
+)
+
+# --- Embedded validation (one assert per gate-A check) ---
+assert result["total"].sum() == df["amount"].sum(), "total amount not conserved"
+assert result.isna().sum().sum() == 0, "unexpected nulls"
+
+# --- Save ---
+result.to_csv(OUTPUT_PATH, index=False)
+```
+
+In gate B, show `result.head()` and the passing checks before finalizing.

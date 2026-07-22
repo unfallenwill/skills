@@ -8,7 +8,7 @@ Process the sales data in `input.csv` to generate a customer-level summary.
 2. For each customer, calculate:
    - `total_amount`: sum of all order amounts
    - `order_count`: number of orders
-3. Save the result to `expected-output.csv`
+3. Save the result to `sales-by-customer.csv`
 
 ## Validation Rules
 - The total amount across all customers must equal the total amount in the input (conservation check)
