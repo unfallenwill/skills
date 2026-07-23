@@ -17,7 +17,7 @@
       "name": "pandas-copilot",
       "source": "./plugins/pandas-copilot",
       "description": "Use pandas without knowing pandas: provide data (primarily Excel) and a validation standard, and get a verified, repeatable data-processing script or notebook.",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     {
       "name": "otel-dev",

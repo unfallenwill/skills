@@ -14,8 +14,8 @@ description: >
   for Chinese-speaking users, English for English-speaking users).
 user-invocable: true
 argument-hint: <path to data file and what to do with it>
-allowed-tools: [Bash, Read, Write, Edit, AskUserQuestion]
-version: 0.1.0
+allowed-tools: [Bash, Read, Write, Edit, AskUserQuestion, TaskCreate, TaskUpdate]
+version: 0.1.1
 ---
 
 # pandas-copilot — Validation-driven pandas script generation
@@ -133,11 +133,16 @@ the current working directory with a name reflecting the task.
 
 ## Key Rules
 
-The three Core Principles above govern every stage. One operational rule is
-worth calling out on its own:
+The three Core Principles above govern every stage. Two operational rules are
+worth calling out on their own:
 
 - **Open feedback**: if the user challenges or gives feedback at any stage, fall
   back to the relevant stage and redo; do not resist.
+- **Progress tracking**: at the start, create one task per stage with
+  TaskCreate, named after the stage, and keep statuses current as stages pass
+  (TaskUpdate) — a gate's task completes only on explicit user approval, and
+  falling back to an earlier stage reopens that stage's task. When iteration
+  uncovers new work, add it as a task instead of silently expanding scope.
 
 ## Resources
 
