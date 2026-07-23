@@ -1,0 +1,9 @@
+{
+  "name": "otel-dev",
+  "version": "0.1.0",
+  "description": "Language-agnostic methodology for bootstrapping the OpenTelemetry SDK (providers, exporters, context propagation, resource attributes) and applying semantic conventions correctly",
+  "author": {
+    "name": "hicaosen"
+  },
+  "tags": ["opentelemetry", "otel", "sdk", "semantic-conventions", "observability", "tracing", "metrics", "logs"]
+}

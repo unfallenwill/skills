@@ -18,6 +18,12 @@
       "source": "./plugins/pandas-copilot",
       "description": "Use pandas without knowing pandas: provide data (primarily Excel) and a validation standard, and get a verified, repeatable data-processing script or notebook.",
       "version": "0.1.0"
+    },
+    {
+      "name": "otel-dev",
+      "source": "./plugins/otel-dev",
+      "description": "Language-agnostic methodology for bootstrapping the OpenTelemetry SDK (providers, exporters, context propagation, resource attributes) and applying semantic conventions correctly",
+      "version": "0.1.0"
     }
   ]
 }
