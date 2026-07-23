@@ -1,0 +1,9 @@
+{
+  "name": "import-linter",
+  "version": "0.1.0",
+  "description": "Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend existing configs, and interpret lint-imports failures.",
+  "author": {
+    "name": "hicaosen"
+  },
+  "tags": ["import-linter", "python", "architecture", "layering", "imports", "code-quality"]
+}

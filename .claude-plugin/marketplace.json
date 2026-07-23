@@ -24,6 +24,12 @@
       "source": "./plugins/otel-dev",
       "description": "Language-agnostic methodology for bootstrapping the OpenTelemetry SDK (providers, exporters, context propagation, resource attributes) and applying semantic conventions correctly",
       "version": "0.1.0"
+    },
+    {
+      "name": "import-linter",
+      "source": "./plugins/import-linter",
+      "description": "Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend existing configs, and interpret lint-imports failures.",
+      "version": "0.1.0"
     }
   ]
 }

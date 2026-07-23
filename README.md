@@ -9,6 +9,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [codex](plugins/codex/) | Agent | A Codex coding agent based on GPT-5 — a proactive coding collaborator with strong engineering judgment |
 | [pandas-copilot](plugins/pandas-copilot/) | Skill | Use pandas without knowing pandas: provide data and a validation standard, get a verified, repeatable data-processing script or notebook |
 | [otel-dev](plugins/otel-dev/) | Skill, Agent | Language-agnostic methodology for bootstrapping the OpenTelemetry SDK and applying semantic conventions correctly |
+| [import-linter](plugins/import-linter/) | Skill | Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend configs, and interpret lint-imports failures |
 
 ## Installation
 
@@ -22,6 +23,7 @@ Install via the marketplace (recommended):
 /plugin install codex@treadonsnow-skills
 /plugin install pandas-copilot@treadonsnow-skills
 /plugin install otel-dev@treadonsnow-skills
+/plugin install import-linter@treadonsnow-skills
 ```
 
 ## Plugin structure
