@@ -22,6 +22,25 @@ saving (**gate B**). Both gates need your explicit confirmation; nothing is
 delivered on the assistant's say-so, and you can challenge or rewind at any
 point.
 
+Under the hood (v0.2):
+
+- **Deterministic steps are scripted.** Data profiling and the Excel health
+  check run as a bundled script (`scripts/profile.py`); check execution and
+  per-check reporting run as another (`scripts/runner.py`) — same behavior
+  every run, no ad-hoc exploration code.
+- **The validation plan is a file, not a conversation.** What you confirm at
+  gate A is written to `.pandas-copilot/checks.py` — the same file the runner
+  executes and the final notebook embeds. One source of truth.
+- **Processing and validation are separated.** The pipeline is a pure
+  `transform()` plus a `load()` that owns all defensive read parameters, so
+  rerunning on next month's file re-fires every check automatically.
+- **Sessions are resumable.** Progress (stage, gates, environment) persists in
+  `.pandas-copilot/session.json`; a new session picks up where the last left
+  off.
+- **Iteration is bounded.** After 3 consecutive failed fix rounds, Copilot
+  stops patching and realigns the validation plan with you instead of blind
+  trial and error.
+
 See [skills/pandas-copilot/SKILL.md](skills/pandas-copilot/SKILL.md) for the
 full stage-by-stage workflow.
 
@@ -33,7 +52,7 @@ You don't have to give precise data every time — all three are supported:
 |-----|---------|------------------------|
 | Expected output sample | "These rows should come out like this" | Infers and generalizes the rule |
 | Rules / assertions | "No nulls allowed", "amount total must match the source" | Turned into an executable check |
-| Natural language | "Remove duplicates, sort by date" | Translated to a check where possible; otherwise marked "needs manual confirmation" in the notebook |
+| Natural language | "Remove duplicates, sort by date" | Translated to a check where possible; otherwise listed as "requires manual confirmation" in every run report and the notebook |
 
 ## Usage
 
@@ -54,5 +73,8 @@ to pin down the validation.
 
 ## Output
 
-- Default: Jupyter notebook (`.ipynb`) with markdown explaining each step
+- Default: Jupyter notebook (`.ipynb`) with markdown explaining each step —
+  read/transform/validation as separate sections, one cell per agreed check
 - Optional: `.py` script, runnable with `python xxx.py`
+- Working artifacts (`.pandas-copilot/`) stay behind so future revisions are
+  cheap; delete the directory freely if you're done

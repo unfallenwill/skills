@@ -77,8 +77,10 @@ venv's own `site-packages`, and following the symlink loses them, causing
 
 ## Step 4 — Verify and remember
 
-Confirm the interpreter imports pandas, then reuse this exact path for all
-downstream pandas execution in the session. Never fall back to the global Python.
+Confirm the interpreter imports pandas, then record this exact path in
+`.pandas-copilot/session.json` as `venv_python` (schema in `artifacts.md`) and
+reuse it for all downstream pandas execution — including `scripts/profile.py`
+and `scripts/runner.py`. Never fall back to the global Python.
 
 ```
 <venv-python> -c "import pandas; print(pandas.__version__)"

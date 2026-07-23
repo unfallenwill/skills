@@ -2,7 +2,7 @@
 
 **Target audience**: Claude (AI), for designing validation approaches during "guided validation" and "run+verify" phases.
 
-**Core principles**: the Core Principles in `SKILL.md` apply here — samples are for inferring rules (never hardcode cell-by-cell comparisons against the sample), and every validation must be executable (an `assert` or boolean check that returns pass/fail).
+**Core principles**: the Core Principles in `SKILL.md` apply here — samples are for inferring rules (never hardcode cell-by-cell comparisons against the sample), and every validation must be executable (an `assert` or boolean check that returns pass/fail). This file covers **what to check**; the file format the checks are written into (`.pandas-copilot/checks.py`: `check_*(raw, out)` functions, docstrings, `MANUAL_CHECKS`) is defined in `artifacts.md` — follow both.
 
 ---
 
@@ -227,72 +227,49 @@ maps to the ready-made pandas expressions in §3, so don't re-derive them here:
 
 ---
 
-## 5. Validation Presentation in Notebook
+## 5. Writing Checks into checks.py
 
-### 5.1 Standard Format
+Every designed check becomes one `check_*` function in `.pandas-copilot/checks.py`
+(full file contract in `artifacts.md`). Design rules that matter here:
 
-```markdown
-## Validation: [check target]
-
-[One-sentence description of what is being validated]
-```
-
-```python
-# Executable assertion
-assert df['id'].is_unique, "ID uniqueness check failed"
-```
-
-### 5.2 Examples
-
-```markdown
-## Validation: Deduplication Result
-
-Check if data has been deduplicated, ensuring no duplicate rows
-```
+- **Docstring first line = the user-facing description**, in the user's
+  language. It is shown at Gate A and in every run report — write it so a
+  non-pandas user understands what is being guaranteed.
+- **Assertion messages must name the actual values**, so a failure report is
+  diagnosable without rerunning:
 
 ```python
-assert df.duplicated().sum() == 0, f"Still have {df.duplicated().sum()} duplicates"
-print(f"Deduplication successful, current data volume: {len(df)} rows")
+def check_amount_conserved(raw, out):
+    """总金额守恒：聚合前后 amount 总和一致"""
+    raw_sum, out_sum = raw["amount"].sum(), out["amount"].sum()
+    assert raw_sum == out_sum, f"amount mismatch: raw={raw_sum}, out={out_sum}"
 ```
 
-```markdown
-## Validation: Aggregation Conservation
+- **One concern per function.** A check that asserts five things reports as one
+  opaque failure; split it so the run report localizes the problem.
+- **Float comparisons**: aggregation reorders arithmetic, so compare sums with
+  a tolerance (`abs(a - b) < 0.01` or `math.isclose`), not `==`.
 
-Check if total amount is conserved after group aggregation
-```
+### Non-automatable criteria
+
+Put them in `MANUAL_CHECKS` (a list of strings) — the runner prints them as an
+unchecked checklist at every run, and Gate B hands them to the user explicitly:
 
 ```python
-original_sum = raw['amount'].sum()
-aggregated_sum = df['amount'].sum()
-assert original_sum == aggregated_sum, f"Total amount mismatch: original={original_sum}, aggregated={aggregated_sum}"
-print(f"Total amount conserved: {original_sum}")
+MANUAL_CHECKS = [
+    "数据分布看起来合理（无异常极值）",   # "data looks reasonable"
+]
 ```
 
-```markdown
-## Validation: Data Types
+Never convert an untranslatable criterion into a fake passing check, and never
+silently drop it.
 
-Ensure date column is datetime type
-```
+### At finalize (Stage 8)
 
-```python
-assert pd.api.types.is_datetime64_any_dtype(df['date']), "date column is not datetime type"
-print(f"Date type correct: {df['date'].dtype}")
-```
-
-### 5.3 Non-automatable Verification Markers
-
-```markdown
-## Validation: Data Reasonableness (Requires Manual Verification)
-
-Please check if the data meets business common sense:
-- Extreme values exist
-- Distribution is reasonable
-```
-
-```python
-# Print statistics for manual inspection
-print(df.describe())
-```
+Each check function is embedded into the deliverable verbatim — its docstring
+becomes the preceding markdown cell, the function + an immediate call becomes
+the code cell; `MANUAL_CHECKS` becomes a markdown checklist followed by a
+`describe()` cell for eyeballing. The mapping table lives in `artifacts.md`.
 
 ---
 
@@ -303,5 +280,5 @@ When designing validations, self-check:
 - [ ] Are rules inferred from samples, not hardcoding sample values?
 - [ ] Are all assertions executable (can produce pass/fail)?
 - [ ] Are core dimensions covered (count conservation, key uniqueness, value domain)?
-- [ ] Are non-automatable checks explicitly marked "Requires manual verification"?
-- [ ] Is notebook presentation clear (description + assertion)?
+- [ ] Are non-automatable checks in `MANUAL_CHECKS`, never faked as passing?
+- [ ] One concern per `check_*` function, docstring in the user's language, assertion messages naming actual values?

@@ -2,10 +2,12 @@
 
 **The one rule behind every case below: a cell's displayed value is not its
 stored value.** Excel layers format, formulas, merged cells, and hidden rows on
-top of raw storage, and pandas reads the raw storage. So before trusting any
-Excel read, do a test-read and inspect the real dtypes and raw values — then run
-`excel_health_check()` at the end of this file for a quick diagnosis. The ten
-sections below are indexed examples of that rule, not unrelated special cases.
+top of raw storage, and pandas reads the raw storage. `scripts/profile.py`
+(Stage 2) already runs the health check that diagnoses these traps — this file
+is the mitigation manual: when the profile report flags an issue, find the
+matching section below for the read parameters and cleanup code to put in
+`load()`. The ten sections are indexed examples of that one rule, not
+unrelated special cases.
 
 ## 1. Multiple Sheet Handling
 
@@ -435,54 +437,18 @@ for info in structure_info:
 
 ---
 
-## Quick Health Check Checklist
+## Quick Health Check
 
-Execute sequentially during exploration phase:
+The health check is scripted — do not re-derive it. Stage 2's profiler runs it
+automatically on any Excel input:
 
-```python
-import pandas as pd
-from openpyxl import load_workbook
-
-def excel_health_check(path):
-    """Rapid diagnosis of common Excel file issues"""
-    issues = []
-
-    # 1. Check sheet count
-    xlsx = pd.ExcelFile(path)
-    if len(xlsx.sheet_names) > 1:
-        issues.append(f"Multi-sheet file: {xlsx.sheet_names}")
-
-    # 2. Test-read first sheet to check data types (reuse the open handle)
-    df = xlsx.parse(0, nrows=20)
-    for col in df.columns:
-        if df[col].dtype == 'object':
-            # Check if serial numbers (integer column)
-            if df[col].str.match(r'^\d{5}$').all():
-                issues.append(f"Column '{col}' may be date serial numbers")
-            # Check thousand separators
-            if df[col].str.contains(r',\d{3}').any():
-                issues.append(f"Column '{col}' contains thousand separators")
-
-    # 3. Check merged cells
-    wb = load_workbook(path)
-    ws = wb.active
-    if ws.merged_cells.ranges:
-        issues.append(f"Merged cells exist: {len(ws.merged_cells.ranges)} regions")
-
-    # 4. Check hidden rows/columns
-    hidden_rows = [r for r in ws.row_dimensions if ws.row_dimensions[r].hidden]
-    hidden_cols = [c for c in ws.column_dimensions if ws.column_dimensions[c].hidden]
-    if hidden_rows or hidden_cols:
-        issues.append(f"Hidden rows: {hidden_rows}, Hidden columns: {hidden_cols}")
-
-    return issues
-
-# Usage
-issues = excel_health_check('/path/to/file.xlsx')
-if issues:
-    print("Potential issues found:")
-    for issue in issues:
-        print(f"  - {issue}")
-else:
-    print("No common issues found, safe to read")
 ```
+<venv-python> <skill-dir>/scripts/profile.py <file.xlsx>
+```
+
+It detects: multi-sheet files, merged regions, hidden rows/columns, suspected
+title/multi-row headers (`Unnamed:` columns), date-serial columns, thousands
+separators, leading-zero values, and large all-integral float columns (ID
+precision risk). Each flagged issue maps to a numbered section above — apply
+that section's read parameters or cleanup code inside `pipeline.py`'s
+`load()`.

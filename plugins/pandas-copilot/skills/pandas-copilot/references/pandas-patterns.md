@@ -230,34 +230,32 @@ df.apply(lambda col: col.max(), axis=0)      # column-wise apply
 # ✅ Prefer: df['new'] = df['col'].str.upper()
 ```
 
-## Script Layout for This Skill
+## Pipeline Layout for This Skill
 
-The generated script/notebook follows this shape — parameterized paths,
-processing, then **embedded validation**, then save. Comments follow the user's
-language (placeholder here).
+Stage 4 code goes into `.pandas-copilot/pipeline.py` with a strict
+load/transform separation (full contract in `artifacts.md`) — validation lives
+only in `checks.py`, never here. Comments follow the user's language
+(placeholder here).
 
 ```python
 import pandas as pd
 
-# Paths are parameters, not hardcoded throwaway values
-INPUT_PATH = "input.xlsx"
-OUTPUT_PATH = "output.csv"
 
-# --- Read (use the defensive Excel params from excel-gotchas.md) ---
-df = pd.read_excel(INPUT_PATH, dtype={"id": str})
+def load(path):
+    """All defensive read parameters live here (excel-gotchas.md informed)."""
+    return pd.read_excel(path, dtype={"id": str})
 
-# --- Process (vectorized, idiomatic pandas) ---
-result = (
-    df.groupby("customer", as_index=False)
-      .agg(total=("amount", "sum"), orders=("order_id", "count"))
-)
 
-# --- Embedded validation (one assert per gate-A check) ---
-assert result["total"].sum() == df["amount"].sum(), "total amount not conserved"
-assert result.isna().sum().sum() == 0, "unexpected nulls"
-
-# --- Save ---
-result.to_csv(OUTPUT_PATH, index=False)
+def transform(raw):
+    """Pure: no I/O, no prints — vectorized, idiomatic pandas."""
+    return (
+        raw.groupby("customer", as_index=False)
+           .agg(total=("amount", "sum"), orders=("order_id", "count"))
+    )
 ```
 
-In gate B, show `result.head()` and the passing checks before finalizing.
+Why pure `transform`: `runner.py` calls `load` → `transform` → every check on
+each run, and the finalize stage embeds the same functions into the
+deliverable — side effects or hardcoded paths in `transform` break both. Paths
+enter only through `load(path)`'s argument; output writing is the runner's
+(`--save`) or the deliverable's save cell's job.
