@@ -1,0 +1,16 @@
+{
+  "name": "interview-prep",
+  "version": "0.1.0",
+  "description": "Generate personalized interview questions and structured interview plans from candidate resumes. Designed for hiring managers and technical interviewers.",
+  "author": {
+    "name": "treadonsnow"
+  },
+  "license": "MIT",
+  "keywords": [
+    "interview",
+    "hiring",
+    "resume",
+    "recruiting",
+    "interview-questions"
+  ]
+}

@@ -30,6 +30,12 @@
       "source": "./plugins/import-linter",
       "description": "Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend existing configs, and interpret lint-imports failures.",
       "version": "0.1.0"
+    },
+    {
+      "name": "interview-prep",
+      "source": "./plugins/interview-prep",
+      "description": "Generate personalized interview questions, interview outlines, follow-up probes, and scoring rubrics from candidate resumes. Built for hiring managers and technical interviewers.",
+      "version": "0.1.0"
     }
   ]
 }
