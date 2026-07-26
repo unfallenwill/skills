@@ -93,27 +93,33 @@ def load_jsonl(path: Path, what: str) -> list[dict]:
     return rows
 
 
-def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
-                            headers: list[str], doc_id, index: dict) -> bool:
-    """Row-based dictionary layout (Dataset | Variable | Label ...): read the
-    source xlsx and index dataset names from row values. Returns True if the
-    sheet was handled as a dictionary sheet."""
+def _detect_dictionary_columns(headers: list[str]) -> tuple[int, int] | None:
+    """Dictionary layout has a dataset-name column and a variable-name column.
+    Returns (ds_idx, var_idx) or None for non-dictionary sheets."""
     norm_headers = [norm(h) for h in headers]
     ds_candidates = {norm(c) for c in DATASET_HEADER_CANDIDATES}
     var_candidates = {norm(c) for c in VAR_HEADER_CANDIDATES}
     ds_idx = next((i for i, h in enumerate(norm_headers) if h in ds_candidates), None)
     var_idx = next((i for i, h in enumerate(norm_headers) if h in var_candidates), None)
     if ds_idx is None or var_idx is None or ds_idx == var_idx:
-        return False
+        return None
+    return ds_idx, var_idx
+
+
+def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
+                            cols: tuple[int, int], doc_id, index: dict) -> None:
+    """Row-based dictionary layout (Dataset | Variable | Label ...): read the
+    source xlsx and index dataset names from row values."""
+    ds_idx, var_idx = cols
     from openpyxl import load_workbook
     try:
         wb = load_workbook(str(xlsx_path), read_only=True, data_only=True)
     except Exception as exc:
         eprint(f"warning: cannot open {xlsx_path} for dictionary sheet {sheet_name}: {exc}")
-        return True  # treat as handled; sheet simply contributes nothing
+        return
     if sheet_name not in wb.sheetnames:
         wb.close()
-        return True
+        return
     ws = wb[sheet_name]
     rows = ws.iter_rows(values_only=True)
     header_row_idx = next(
@@ -122,7 +128,7 @@ def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
     )
     if header_row_idx is None:
         wb.close()
-        return True
+        return
     for row in ws.iter_rows(min_row=header_row_idx + 2, values_only=True):
         ds = row[ds_idx] if ds_idx < len(row) else None
         var = row[var_idx] if var_idx < len(row) else None
@@ -136,7 +142,6 @@ def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
         })
         entry["columns"].setdefault(norm(var), var)
     wb.close()
-    return True
 
 
 def build_index(doc_map: dict) -> dict[str, dict]:
@@ -157,8 +162,19 @@ def build_index(doc_map: dict) -> dict[str, dict]:
             headers = [str(h).strip() for h in sheet.get("headers", []) if str(h).strip()]
             if not headers:
                 continue
-            if doc.get("format") == "xlsx" and doc_path.exists() and _index_dictionary_sheet(
-                    doc_path, sheet.get("sheet", ""), headers, doc.get("doc_id"), index):
+            dict_cols = _detect_dictionary_columns(headers) if doc.get("format") == "xlsx" else None
+            if dict_cols is not None:
+                if doc_path.exists():
+                    _index_dictionary_sheet(doc_path, sheet.get("sheet", ""), dict_cols,
+                                            doc.get("doc_id"), index)
+                else:
+                    # Dictionary rows live in the source file, not doc-map; without
+                    # it this sheet contributes nothing (fail-closed: refs to its
+                    # datasets stay unresolved). Never fall back to form layout here —
+                    # the dictionary headers are NOT variable names.
+                    eprint(f"warning: dictionary sheet '{sheet.get('sheet', '')}' needs the "
+                           f"source xlsx for row values, but it is not accessible: {doc_path}; "
+                           f"its variables will be reported unresolved")
                 continue
             # Form layout: sheet name is the dataset/form, headers are variables.
             cols = {}

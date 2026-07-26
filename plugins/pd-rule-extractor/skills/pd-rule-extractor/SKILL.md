@@ -64,7 +64,7 @@ version: 0.1.0
 
 按 `references/output-format.md` 的 14 列规范把每条去重规则写完整：判定逻辑写 **SQL 风格形式化表达式**（比较/逻辑、IN/BETWEEN、EXISTS/NOT EXISTS、DATEDIFF 等），变量一律 `数据集.变量` 全限定、可经 variables.jsonl 解析，零自然语言残留（语法硬约束见 output-format.md "判定逻辑表达式语法"）；严重程度依 `severity-criteria.md` 判定，未定义则留空。规则编号自 PD-001 起连续分配。产出 `rules-written.jsonl`。
 
-出口门禁：运行 `uv run scripts/verify_variables.py --workdir .pd-extraction`，用代码核实每个 `数据集.变量` 引用在源文档 sheet 索引中真实存在；存在未解析引用时不得进入阶段 4，按 `variable-verification.json` 的候选建议修正后复跑至退出码 0。
+出口门禁：运行 `uv run scripts/verify_variables.py --workdir .pd-extraction`，用代码核实每个 `数据集.变量` 引用在源文档 sheet 索引中真实存在；存在未解析引用时不得进入阶段 4，按 `variable-verification.json` 的候选建议修正（无候选时对照 doc-map 的 sheets 概要人工定位变量）后复跑至退出码 0。
 
 ### 阶段 4 — 对抗性审核
 
