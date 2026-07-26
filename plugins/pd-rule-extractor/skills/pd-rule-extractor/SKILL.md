@@ -48,7 +48,9 @@ version: 0.1.0
 
 对每份文档运行 `uv run scripts/probe_docs.py extract --input <文件> --role <protocol|dvp|dbdesign> --doc-id <id> --workdir .pd-extraction`，解析产出 `doc-map.json`（文档清单、类型、章节/sheet 结构、文本块清单及定位锚点）与 `chunks/<docid>/<chunk-id>.md` 文本块。脚本幂等，同 doc-id 重跑只覆盖该文档条目。
 
-随后在 chunks 中专项检索"方案偏离分级/严重程度"定义（匹配"偏离分级、严重程度、Major/Minor、重要偏离"等模式词，不限定章节名），提炼判定标准写入 `.pd-extraction/severity-criteria.md`；源文档未定义则在该文件记录"未定义"，最终严重程度列留空并在说明 sheet 注明。
+随后在 chunks 中专项检索"方案偏离分级/严重程度"定义（匹配"偏离分级、严重程度、Major/Minor、重要偏离"等模式词，不限定章节名），提炼判定标准写入 `.pd-extraction/severity-criteria.md`；源文档未定义则在该文件首行记录"未定义"，最终严重程度列留空并在说明 sheet 注明。
+
+阶段 0 末尾派**项目全景综合任务**（模板：`references/context-prompt.md`）通读全部文本块，产出 `.pd-extraction/project-context.md`：试验概要、访视流程总览、三源结构对照、项目词汇表、关键数值速查、变量索引说明、疑点清单。后续所有阶段共享此上下文——核实、引用、查找先查全景，不再每次重读原文。
 
 ### 阶段 1 — 分块穷尽提取
 
@@ -61,6 +63,8 @@ version: 0.1.0
 ### 阶段 3 — 规则编写
 
 按 `references/output-format.md` 的 14 列规范把每条去重规则写完整：判定逻辑写 **SQL 风格形式化表达式**（比较/逻辑、IN/BETWEEN、EXISTS/NOT EXISTS、DATEDIFF 等），变量一律 `数据集.变量` 全限定、可经 variables.jsonl 解析，零自然语言残留（语法硬约束见 output-format.md "判定逻辑表达式语法"）；严重程度依 `severity-criteria.md` 判定，未定义则留空。规则编号自 PD-001 起连续分配。产出 `rules-written.jsonl`。
+
+出口门禁：运行 `uv run scripts/verify_variables.py --workdir .pd-extraction`，用代码核实每个 `数据集.变量` 引用在源文档 sheet 索引中真实存在；存在未解析引用时不得进入阶段 4，按 `variable-verification.json` 的候选建议修正后复跑至退出码 0。
 
 ### 阶段 4 — 对抗性审核
 
@@ -91,7 +95,8 @@ version: 0.1.0
 References（按需加载，勿一次性全读）：
 
 - `references/pd-taxonomy.md` — 11 类别体系：定义、子类、出没位置模式、提取检查清单（阶段 1）
-- `references/output-format.md` — 14 列逐列释义、三 sheet 结构、严重程度与备注列规范（阶段 3、5）
+- `references/output-format.md` — 14 列逐列释义、三 sheet 结构、判定逻辑表达式语法、严重程度与备注列规范（阶段 3、5）
+- `references/context-prompt.md` — 项目全景综合任务提示词模板（阶段 0）
 - `references/extractor-prompt.md` — 提取子任务提示词模板（阶段 1）
 - `references/reviewer-prompt.md` — 单条规则对抗审核提示词模板（阶段 4）
 - `references/completeness-critic-prompt.md` — 完整性批评者提示词模板（阶段 5）
@@ -101,6 +106,7 @@ Scripts（用 Bash 运行，勿读入上下文）：
 
 - `scripts/probe_docs.py` — 阶段 0 文档解析，产出 doc-map.json 与 chunks/
 - `scripts/reconcile.py` — 阶段 5 覆盖矩阵与 DVP 对账证据
+- `scripts/verify_variables.py` — 阶段 3 出口门禁：代码核实变量引用真实存在
 - `scripts/build_excel.py` — 阶段 5 生成最终三 sheet Excel
 
 Examples：

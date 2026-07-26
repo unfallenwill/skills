@@ -1,0 +1,216 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Verify that every dataset.variable referenced by rule conditions and fields
+actually exists in the source documents.
+
+Index source: doc-map.json xlsx sheet summaries (sheet name + header row,
+extracted deterministically by probe_docs.py). References are extracted from
+rules-written.jsonl `condition` and `fields` with regexes.
+
+Outputs variable-verification.json:
+  index        sheets/columns counts used for verification
+  references   unique dataset.variable refs found (plus EXISTS dataset refs)
+  resolved     refs confirmed against the index
+  unresolved   refs NOT found in the index (must be fixed before review)
+  unverifiable docs have no xlsx index at all (non-xlsx DB design); refs to
+               datasets that cannot be checked deterministically
+
+Exit codes: 0 all referenced variables verified (or nothing to check),
+            1 hard input error, 2 unresolved references remain.
+
+Usage:
+  uv run verify_variables.py --workdir .pd-extraction [--summary]
+"""
+
+from __future__ import annotations
+
+import argparse
+import difflib
+import json
+import re
+import sys
+from pathlib import Path
+from typing import NoReturn
+
+# dataset.variable references, e.g. DM.AGE, VISIT.VISDAT, EditChecks.规则编号.
+# Both parts must start with a non-digit word char (Unicode-aware, so Chinese
+# sheet/column names match) — this also excludes decimals and version literals
+# like 'v3.0' (their post-dot part starts with a digit).
+REF_RE = re.compile(r"\b([^\W\d]\w*)\.([^\W\d]\w*)\b")
+# bare dataset inside EXISTS/NOT EXISTS ( ... )
+EXISTS_RE = re.compile(r"(?:NOT\s+)?EXISTS\s*\(\s*([^\W\d]\w*)", re.IGNORECASE)
+
+
+def eprint(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def fail(msg: str, code: int = 1) -> NoReturn:
+    eprint(f"error: {msg}")
+    sys.exit(code)
+
+
+def norm(name: str) -> str:
+    """Normalization for dataset/sheet matching: case- and separator-insensitive."""
+    return re.sub(r"[\s_\-]+", "", name).lower()
+
+
+def load_json(path: Path, what: str):
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"corrupt {what}: {path} ({exc})")
+
+
+def load_jsonl(path: Path, what: str) -> list[dict]:
+    if not path.exists():
+        fail(f"missing {what}: {path}")
+    rows: list[dict] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            fail(f"corrupt {what} line {lineno}: {exc}")
+    return rows
+
+
+def build_index(doc_map: dict) -> dict[str, dict]:
+    """sheet-name (normalized) -> {sheet, doc_id, columns: {norm: original}}."""
+    index: dict[str, dict] = {}
+    for doc in doc_map.get("documents", []):
+        for sheet in doc.get("sheets", []):
+            cols = {}
+            for h in sheet.get("headers", []):
+                h = str(h).strip()
+                if h:
+                    cols.setdefault(norm(h), h)
+            if cols:
+                index.setdefault(norm(sheet.get("sheet", "")), {
+                    "sheet": sheet.get("sheet", ""),
+                    "doc_id": doc.get("doc_id"),
+                    "columns": cols,
+                })
+    return index
+
+
+def extract_refs(rule: dict) -> list[dict]:
+    """All dataset.variable refs (condition + fields) and EXISTS dataset refs."""
+    refs: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    texts = [str(rule.get("condition", "") or ""), str(rule.get("fields", "") or "")]
+    for text in texts:
+        for m in REF_RE.finditer(text):
+            key = (m.group(1), m.group(2))
+            if key not in seen:
+                seen.add(key)
+                refs.append({"kind": "variable", "dataset": key[0], "variable": key[1],
+                             "ref": f"{key[0]}.{key[1]}"})
+        for m in EXISTS_RE.finditer(text):
+            ds = m.group(1)
+            key = (ds, "")
+            if key not in seen:
+                seen.add(key)
+                refs.append({"kind": "dataset", "dataset": ds, "variable": None, "ref": ds})
+    return refs
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--workdir", required=True, help="Working directory (.pd-extraction).")
+    parser.add_argument("--summary", action="store_true",
+                        help="Print human-readable summary (still writes JSON output).")
+    args = parser.parse_args()
+
+    workdir = Path(args.workdir)
+    if not workdir.is_dir():
+        fail(f"workdir not found: {workdir}")
+
+    doc_map = load_json(workdir / "doc-map.json", "doc-map.json")
+    if doc_map is None:
+        fail(f"missing doc-map.json: {workdir / 'doc-map.json'} (run probe_docs.py extract first)")
+    rules = load_jsonl(workdir / "rules-written.jsonl", "rules-written.jsonl")
+
+    index = build_index(doc_map)
+    has_index = bool(index)
+
+    resolved: list[dict] = []
+    unresolved: list[dict] = []
+    n_refs = 0
+    for rule in rules:
+        rid = rule.get("rule_id", "?")
+        for ref in extract_refs(rule):
+            n_refs += 1
+            if not has_index:
+                continue  # counted as unverifiable below
+            entry = index.get(norm(ref["dataset"]))
+            if entry is None:
+                suggestion = difflib.get_close_matches(norm(ref["dataset"]), index.keys(), n=3)
+                unresolved.append({**ref, "rule_id": rid, "problem": "dataset not in index",
+                                   "candidates": [index[s]["sheet"] for s in suggestion]})
+                continue
+            if ref["kind"] == "dataset":
+                resolved.append({**ref, "rule_id": rid, "sheet": entry["sheet"]})
+                continue
+            if norm(ref["variable"]) not in entry["columns"]:
+                suggestion = difflib.get_close_matches(
+                    norm(ref["variable"]), entry["columns"].keys(), n=3)
+                unresolved.append({**ref, "rule_id": rid,
+                                   "problem": f"variable not in sheet {entry['sheet']}",
+                                   "candidates": [entry["columns"][s] for s in suggestion]})
+                continue
+            resolved.append({**ref, "rule_id": rid, "sheet": entry["sheet"]})
+
+    result = {
+        "index": {"sheets": len(index),
+                  "columns_total": sum(len(e["columns"]) for e in index.values()),
+                  "available": has_index},
+        "references_total": n_refs,
+        "resolved_count": len(resolved),
+        "unresolved_count": len(unresolved) if has_index else 0,
+        "unverifiable_count": 0 if has_index else n_refs,
+        "resolved": resolved,
+        "unresolved": unresolved if has_index else [],
+        "note": ("no xlsx sheet index in doc-map.json; references cannot be verified "
+                 "deterministically (DB design doc is not xlsx) — verify via LLM against "
+                 "chunks and record the outcome" if not has_index else
+                 "exit code 2 while unresolved references remain; fix rules or correct "
+                 "the variable names, then rerun"),
+    }
+    (workdir / "variable-verification.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if args.summary:
+        print(f"index: {result['index']['sheets']} sheets, "
+              f"{result['index']['columns_total']} columns")
+        print(f"references: {n_refs}  resolved: {result['resolved_count']}  "
+              f"unresolved: {result['unresolved_count']}  "
+              f"unverifiable: {result['unverifiable_count']}")
+        for u in result["unresolved"][:20]:
+            print(f"  UNRESOLVED [{u['rule_id']}] {u['ref']} — {u['problem']}"
+                  + (f" (candidates: {', '.join(u['candidates'])})" if u["candidates"] else ""))
+    else:
+        json.dump({"references_total": n_refs,
+                   "resolved": result["resolved_count"],
+                   "unresolved": result["unresolved_count"],
+                   "unverifiable": result["unverifiable_count"]},
+                  sys.stdout, ensure_ascii=False, indent=2)
+        print()
+
+    return 2 if result["unresolved_count"] else 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception as exc:
+        fail(f"{type(exc).__name__}: {exc}")

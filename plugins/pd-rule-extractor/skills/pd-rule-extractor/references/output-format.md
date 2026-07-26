@@ -105,4 +105,4 @@ duplicate_of     → 重复规则指向
 remarks          → 备注
 ```
 
-另有两个 JSONL 专属字段不进入 Excel 列，但由 build_excel.py 用于统计：`review_status`（passed/failed）、`review_notes`（3 票理由的汇总文本）。示例见 `examples/rules-written.example.jsonl`。
+另有三个 JSONL 专属字段不进入 Excel 列：`review_status`（passed/failed）与 `review_notes`（3 票理由的汇总文本）由 build_excel.py 用于统计与备注标注；`rationale`（规则意义：该要求为何存在，提取阶段对照三源理解后填写）供编写与审核使用，不进 Excel。示例见 `examples/rules-written.example.jsonl`。

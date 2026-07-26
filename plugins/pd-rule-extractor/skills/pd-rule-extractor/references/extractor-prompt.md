@@ -8,6 +8,7 @@
 - `{category_definition}` — pd-taxonomy.md 中该类别一节的原文（定义、子类、出没位置、检查清单），派发时必须附上，不得省略
 - `{chunk_list}` — 该文档全部文本块的路径清单（每行一个 `chunks/<docid>/<chunk-id>.md`），子任务据此逐块阅读
 - `{perspective}` — 本次派发的扫描通道：`all`（默认，三遍全做）或 `sequential` / `category` / `table` 之一（并行拆通道时使用）
+- `{project_context}` — 项目全景文件路径（`.pd-extraction/project-context.md`），子任务开始前先读它建立全局认识
 
 ---
 
@@ -17,7 +18,7 @@
 
 ### 输入
 
-文本块清单（逐块用 Read 完整阅读，不得跳块、不得只读摘要）：
+先读项目全景 `{project_context}`，建立对试验设计、访视流程、三源结构对照与项目词汇的整体认识（全景中与本类别相关的章节重点看）；再逐块阅读下列文本块（逐块用 Read 完整阅读，不得跳块、不得只读摘要）：
 
 ```
 {chunk_list}
@@ -47,8 +48,10 @@
 **候选规则行**（每条规则一行）：
 
 ```json
-{"doc_id": "{doc_id}", "category": "{category}", "subcategory": "<子类短语>", "description": "<什么情形构成偏离，一句话>", "condition": "<SQL 风格形式化表达式，见下方书写规范>", "visits": "<相关访视，逗号分隔；全程适用写所有访视；不适用留空>", "forms": "<相关 CRF 表单名；未知留空>", "fields": "<判定逻辑引用的全部变量，数据集.变量 全限定，逗号分隔>", "source_locator": "<定位锚点：docx §章节路径 / xlsx <Sheet>!R<行> / pdf p.<页码>；多处用分号>", "original_rule_ids": "<源文档自带编号；无则留空>"}
+{"doc_id": "{doc_id}", "category": "{category}", "subcategory": "<子类短语>", "description": "<什么情形构成偏离，一句话>", "condition": "<SQL 风格形式化表达式，见下方书写规范>", "rationale": "<规则意义，一句话：该要求为何存在——保护受试者安全/权益、保证数据完整性、保证方案依从性？对照方案+DVP+数据库设计三源理解后填写>", "visits": "<相关访视，逗号分隔；全程适用写所有访视；不适用留空>", "forms": "<相关 CRF 表单名；未知留空>", "fields": "<判定逻辑引用的全部变量，数据集.变量 全限定，逗号分隔>", "source_locator": "<定位锚点：docx §章节路径 / xlsx <Sheet>!R<行> / pdf p.<页码>；多处用分号>", "original_rule_ids": "<源文档自带编号；无则留空>"}
 ```
+
+**rationale（规则意义）填写要求：** 每条候选必填。先理解再落笔——同一要求在方案中的表述（为什么这样规定）、在 DVP 中的核查角度（担心什么错误）、在 CRF 中的数据落点（用什么数据判定），三源对照后回答"这条规则守护的是什么"。rationale 是过程字段，供阶段 3 编写 description、阶段 4 审核忠实度使用，不直接进入 Excel 列。
 
 ### condition 与 fields 书写规范（强制）
 
