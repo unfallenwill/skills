@@ -6,7 +6,7 @@
 - `{source_excerpt}` — 按 `source_locator` 从 chunks 中取出的来源原文片段（可多条，逐条标注定位）
 - `{peer_rules_digest}` — 同类别其他规则的 (rule_id, subcategory, description) 摘要清单，供重复检查
 - `{severity_criteria}` — severity-criteria.md 全文（源文档未定义时该占位符为"未定义"）
-- `{variables_dictionary}` — 变量字典（variables.jsonl 的数据集.变量清单；无该文件时注明"以 dbdesign chunks 为准"）
+- `{variables_dictionary}` — 变量字典（variables.jsonl 的数据集.变量清单；无该文件时注明"以 dbdesign chunks 为准"；无数据库设计文档时注明"无可核实来源"，此时可编译性维度仅审表达式形式与全限定格式，变量存在性不作判定）
 - `{instance_id}` — 审核实例序号（1/2/3），仅用于记录，不影响审核
 
 ---

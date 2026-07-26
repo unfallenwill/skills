@@ -14,7 +14,7 @@
 
 - 阶段 0 末尾：派**项目全景综合任务**（模板：`references/context-prompt.md`）通读全部文本块，产出 `project-context.md`（试验概要、访视流程总览、三源结构对照、项目词汇表、关键数值速查、变量索引说明、疑点清单）——后续所有阶段共享此上下文。
 - 阶段 1 内部：矩阵各格相互独立，可任意并行。DVP 全量抄录、变量字典提取为两个独立一次性任务（不随矩阵格派发；DVP 抄录模板见 extractor-prompt.md 末节），变量字典从数据库设计说明/CRF 提取（数据集、变量、标签、所属表单），供判定逻辑全限定书写与审核解析。
-- 阶段 3 出口门禁：运行 `uv run scripts/verify_variables.py --workdir .pd-extraction`，用代码核实判定逻辑与字段列中每个 `数据集.变量` 引用在 doc-map 的 xlsx sheet 索引中真实存在；退出码非 0（存在未解析引用）时**不得进入阶段 4**——按 `variable-verification.json` 的 candidates 修正后复跑至 0。数据库设计文档非 xlsx 时索引缺失，引用标记为 unverifiable，改由主执行者对照 chunks 人工核实并在该文件记录结论。
+- 阶段 3 出口门禁：运行 `uv run scripts/verify_variables.py --workdir .pd-extraction`，用代码核实判定逻辑与字段列中每个 `数据集.变量` 引用在数据库设计文档的变量索引中真实存在；退出码非 0（存在未解析引用）时**不得进入阶段 4**——按 `variable-verification.json` 的 candidates 修正后复跑至 0。数据库设计文档非 xlsx 时索引缺失，引用标记为 unverifiable，改由主执行者对照 chunks 人工核实并在该文件记录结论。注意：字典表布局的 sheet 核实需回源读取 dbdesign 源 xlsx 行值，须保证 doc-map.json 记录的路径可访问（续跑/搬迁工作目录时连同源文件一起处理）。
 - 阶段 4 内部：每条规则的 3 个审核实例相互独立，可任意并行。
 - 阶段 5 时序（首轮 critic 依赖 reconcile 产出，不可颠倒）：先做初始对账——汇总 candidates 哨兵行写入 none-confirmed.json、写首版 dvp-mapping.json、跑 reconcile → 进入 critic 循环（每轮 = critic 审查 → 定向补提走阶段1→4 子集 → 同步更新映射与哨兵 → 重跑 reconcile）→ 连续两轮无新增（clean）且 reconcile 退出码 0 收敛 → build_excel（`--loop-rounds` 传实际轮数）。
 
@@ -55,7 +55,7 @@ uv run scripts/build_excel.py --workdir .pd-extraction --output <输出路径.xl
 - probe_docs.py 只负责解析与切块，不做任何规则判断；`identify` 用于目录模式的类型启发式识别，`extract` 对单文档幂等抽取（同 doc-id 重跑覆盖该文档条目）。
 - 运行 reconcile.py 之前，主执行者把 `candidates/*.jsonl` 中的确认无哨兵行汇总写入 `none-confirmed.json`，格式 `{"cells": [{"doc_id": "...", "category": "..."}]}`；文件缺失时未覆盖格一律标 missing（视为缺口）。
 - reconcile.py 读取 doc-map.json、rules-written.jsonl、dvp-rules.jsonl、dvp-mapping.json（若存在）、none-confirmed.json（若存在），产出 coverage.json 与 reconciliation.json；dvp-mapping.json 缺失的 DVP 规则计入"未映射"；dvp-rules.jsonl 按 rule_id 去重兜底。退出码：0 无 gap、1 硬错误、2 有 gap（DVP 未映射/悬空引用/矩阵 missing 格——收敛判据即退出码 0）；未被引用的章节只列为候选缺口，不影响退出码。
-- verify_variables.py 读取 doc-map.json 的 xlsx sheet 索引（probe 确定性提取的表头）与 rules-written.jsonl，正则抽取 condition/fields 中的 `数据集.变量` 引用（含 EXISTS 裸数据集名，支持中文名），逐一核实存在性；未解析引用给出候选建议。退出码：0 全部已解析、1 硬错误、2 有未解析引用。
+- verify_variables.py 只以 role=dbdesign 的文档建变量索引（支持两种 xlsx 布局：逐表单 sheet——sheet 名为数据集/表单、表头为变量，索引用 probe 提取的表头；字典表 sheet——表头含"数据集/变量"列、每行一变量，核实回源读取 xlsx 行值），与 rules-written.jsonl 交叉核对：正则抽取 condition/fields 中的 `数据集.变量` 引用（含 EXISTS 裸数据集名，支持中文名），逐一核实存在性；未解析引用给出候选建议。退出码：0 全部已解析（含索引缺失的 unverifiable 情形）、1 硬错误、2 有未解析引用。
 - build_excel.py 读取 rules-written.jsonl（含阶段 4 回填的 review_status/review_notes；不直接读 reviews/）、coverage.json、reconciliation.json、severity-criteria.md，按 output-format.md 生成三 sheet。severity-criteria.md 分三种情形：首行含"未定义"或文件缺失 → 说明 sheet 写"源文档未定义严重程度标准，该列留空"；内容含 severity_override 声明 → 写"由项目配置 severity_override 统一覆盖"；否则 → 写"按项目文档定义（severity-criteria.md）"。阶段 0 未定义情形下务必把"未定义"写在文件首行。`--loop-rounds` 传入阶段 5 实际补提轮数，写入说明 sheet 穷尽性证据。配置 `severity_override` 时：主执行者在阶段 3 按覆盖值填写严重程度列，并把覆盖声明（含 severity_override 字样）写入 severity-criteria.md，脚本本身无 override 参数。
 
 ## 断点续跑

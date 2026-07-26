@@ -7,9 +7,13 @@
 """Verify that every dataset.variable referenced by rule conditions and fields
 actually exists in the source documents.
 
-Index source: doc-map.json xlsx sheet summaries (sheet name + header row,
-extracted deterministically by probe_docs.py). References are extracted from
-rules-written.jsonl `condition` and `fields` with regexes.
+Index source: only role="dbdesign" documents contribute. Two xlsx layouts are
+supported — per-form sheets (sheet name = dataset/form, header row = variables,
+headers extracted deterministically by probe_docs.py into doc-map.json) and
+dictionary sheets (Dataset/Variable columns, one row per variable; rows are
+re-read from the source xlsx, so the path recorded in doc-map.json must remain
+accessible). References are extracted from rules-written.jsonl `condition` and
+`fields` with regexes.
 
 Outputs variable-verification.json:
   index        sheets/columns counts used for verification
