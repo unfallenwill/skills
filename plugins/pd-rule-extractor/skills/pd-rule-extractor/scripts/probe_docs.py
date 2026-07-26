@@ -49,6 +49,18 @@ DBDESIGN_CONTENT_KW = [
 # Header cells that strongly indicate a DVP rule table (rule id column).
 DVP_HEADER_KW = ["规则编号", "rule id", "rule no", "rule_id", "rule#", "核查编号", "编号"]
 
+# Header names marking a dictionary-layout sheet (one row per variable):
+# a column holding the dataset name + a column holding the variable name.
+# Detected during extraction so downstream verification (verify_variables.py)
+# can index dataset -> variables from doc-map.json without re-reading the file.
+DICT_DATASET_HEADER_KW = ["dataset", "数据集", "ds", "table", "表", "数据表"]
+DICT_VAR_HEADER_KW = ["variable", "变量", "var", "field", "字段", "列", "变量名"]
+
+
+def norm_name(name: str) -> str:
+    """Case- and separator-insensitive normalization for header matching."""
+    return re.sub(r"[\s_\-]+", "", name).lower()
+
 
 def eprint(msg: str) -> None:
     print(msg, file=sys.stderr)
@@ -296,8 +308,23 @@ def extract_docx(path: Path, doc_id: str, workdir: Path) -> list[dict]:
     return units
 
 
+def detect_dictionary_columns(headers: list[str]) -> tuple[int, int] | None:
+    """Return (dataset_col, variable_col) for dictionary-layout sheets, else None."""
+    norm_headers = [norm_name(h) for h in headers]
+    ds_set = {norm_name(k) for k in DICT_DATASET_HEADER_KW}
+    var_set = {norm_name(k) for k in DICT_VAR_HEADER_KW}
+    ds_idx = next((i for i, h in enumerate(norm_headers) if h in ds_set), None)
+    var_idx = next((i for i, h in enumerate(norm_headers) if h in var_set), None)
+    if ds_idx is None or var_idx is None or ds_idx == var_idx:
+        return None
+    return ds_idx, var_idx
+
+
 def extract_xlsx(path: Path, doc_id: str, workdir: Path) -> tuple[list[dict], list[dict]]:
     from openpyxl import load_workbook
+
+    def row_text(r: tuple) -> str:
+        return " | ".join("" if v is None else str(v) for v in r)
 
     wb = load_workbook(str(path), read_only=True, data_only=True)
     units: list[dict] = []
@@ -319,16 +346,30 @@ def extract_xlsx(path: Path, doc_id: str, workdir: Path) -> tuple[list[dict], li
         headers: list[str] = []
         if header_row_idx is not None:
             headers = ["" if v is None else str(v).strip() for v in rows[header_row_idx]]
-        sheet_summaries.append({
+        summary = {
             "sheet": ws.title,
             "rows": n_rows,
             "cols": n_cols,
             "header_row": (header_row_idx + 1) if header_row_idx is not None else None,
             "headers": headers,
-        })
-
-        def row_text(r: tuple) -> str:
-            return " | ".join("" if v is None else str(v) for v in r)
+        }
+        # Dictionary-layout sheets: record dataset -> variable names so that
+        # verify_variables.py can index from doc-map.json alone.
+        dict_cols = detect_dictionary_columns(headers) if headers else None
+        if dict_cols is not None and header_row_idx is not None:
+            ds_idx, var_idx = dict_cols
+            dict_vars: dict[str, list[str]] = {}
+            for r in rows[header_row_idx + 1:]:
+                ds = r[ds_idx] if ds_idx < len(r) else None
+                var = r[var_idx] if var_idx < len(r) else None
+                if ds is None or var is None:
+                    continue
+                ds, var = str(ds).strip(), str(var).strip()
+                if ds and var and var not in dict_vars.setdefault(ds, []):
+                    dict_vars[ds].append(var)
+            if dict_vars:
+                summary["dict_variables"] = dict_vars
+        sheet_summaries.append(summary)
 
         if n_rows == 0:
             continue
@@ -484,7 +525,6 @@ def main() -> int:
         raise
     except Exception as exc:
         fail(f"{type(exc).__name__}: {exc}")
-    return 1
 
 
 if __name__ == "__main__":

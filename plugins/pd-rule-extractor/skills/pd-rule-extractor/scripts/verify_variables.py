@@ -1,19 +1,17 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = [
-#   "openpyxl>=3.1",
-# ]
+# dependencies = []
 # ///
 """Verify that every dataset.variable referenced by rule conditions and fields
 actually exists in the source documents.
 
-Index source: only role="dbdesign" documents contribute. Two xlsx layouts are
-supported — per-form sheets (sheet name = dataset/form, header row = variables,
-headers extracted deterministically by probe_docs.py into doc-map.json) and
-dictionary sheets (Dataset/Variable columns, one row per variable; rows are
-re-read from the source xlsx, so the path recorded in doc-map.json must remain
-accessible). References are extracted from rules-written.jsonl `condition` and
-`fields` with regexes.
+Index source: doc-map.json sheet summaries of role="dbdesign" documents only,
+as extracted deterministically by probe_docs.py. Two xlsx layouts are covered —
+per-form sheets (sheet name = dataset/form, header row = variables) and
+dictionary sheets (Dataset/Variable columns, one row per variable; probe emits
+them as the sheet's `dict_variables` map). No source file access is needed at
+verification time. References are extracted from rules-written.jsonl
+`condition` and `fields` with regexes.
 
 Outputs variable-verification.json:
   index        sheets/columns counts used for verification
@@ -95,7 +93,8 @@ def load_jsonl(path: Path, what: str) -> list[dict]:
 
 def _detect_dictionary_columns(headers: list[str]) -> tuple[int, int] | None:
     """Dictionary layout has a dataset-name column and a variable-name column.
-    Returns (ds_idx, var_idx) or None for non-dictionary sheets."""
+    Returns (ds_idx, var_idx) or None for non-dictionary sheets. Only used to
+    recognize stale doc-maps produced before probe emitted dict_variables."""
     norm_headers = [norm(h) for h in headers]
     ds_candidates = {norm(c) for c in DATASET_HEADER_CANDIDATES}
     var_candidates = {norm(c) for c in VAR_HEADER_CANDIDATES}
@@ -106,88 +105,53 @@ def _detect_dictionary_columns(headers: list[str]) -> tuple[int, int] | None:
     return ds_idx, var_idx
 
 
-def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
-                            cols: tuple[int, int], doc_id, index: dict) -> None:
-    """Row-based dictionary layout (Dataset | Variable | Label ...): read the
-    source xlsx and index dataset names from row values."""
-    ds_idx, var_idx = cols
-    from openpyxl import load_workbook
-    try:
-        wb = load_workbook(str(xlsx_path), read_only=True, data_only=True)
-    except Exception as exc:
-        eprint(f"warning: cannot open {xlsx_path} for dictionary sheet {sheet_name}: {exc}")
-        return
-    if sheet_name not in wb.sheetnames:
-        wb.close()
-        return
-    ws = wb[sheet_name]
-    rows = ws.iter_rows(values_only=True)
-    header_row_idx = next(
-        (i for i, r in enumerate(rows) if any(v is not None and str(v).strip() for v in r)),
-        None,
-    )
-    if header_row_idx is None:
-        wb.close()
-        return
-    for row in ws.iter_rows(min_row=header_row_idx + 2, values_only=True):
-        ds = row[ds_idx] if ds_idx < len(row) else None
-        var = row[var_idx] if var_idx < len(row) else None
-        if ds is None or var is None:
-            continue
-        ds, var = str(ds).strip(), str(var).strip()
-        if not ds or not var:
-            continue
-        entry = index.setdefault(norm(ds), {
-            "sheet": sheet_name, "doc_id": doc_id, "columns": {}, "layout": "dictionary",
-        })
-        entry["columns"].setdefault(norm(var), var)
-    wb.close()
-
-
 def build_index(doc_map: dict) -> dict[str, dict]:
     """sheet/dataset-name (normalized) -> {sheet, doc_id, columns: {norm: original}}.
 
     Only DB-design documents (role == "dbdesign") contribute — DVP xlsx sheets
     must not pollute the index (they would turn a missing DB-design index into
-    spurious 'dataset not in index' failures). Two xlsx layouts are supported:
-    per-form sheets (sheet name = dataset/form, header row = variables) and
-    dictionary sheets (one row per variable with Dataset/Variable columns).
+    spurious 'dataset not in index' failures). Both xlsx layouts come straight
+    from doc-map.json: dictionary sheets via the `dict_variables` map probe
+    emitted, per-form sheets via the header row.
     """
     index: dict[str, dict] = {}
     for doc in doc_map.get("documents", []):
         if doc.get("role") != "dbdesign":
             continue
-        doc_path = Path(doc.get("path", ""))
         for sheet in doc.get("sheets", []):
+            sheet_name = sheet.get("sheet", "")
             headers = [str(h).strip() for h in sheet.get("headers", []) if str(h).strip()]
             if not headers:
                 continue
-            dict_cols = _detect_dictionary_columns(headers) if doc.get("format") == "xlsx" else None
-            if dict_cols is not None:
-                if doc_path.exists():
-                    _index_dictionary_sheet(doc_path, sheet.get("sheet", ""), dict_cols,
-                                            doc.get("doc_id"), index)
-                else:
-                    # Dictionary rows live in the source file, not doc-map; without
-                    # it this sheet contributes nothing (fail-closed: refs to its
-                    # datasets stay unresolved). Never fall back to form layout here —
-                    # the dictionary headers are NOT variable names.
-                    eprint(f"warning: dictionary sheet '{sheet.get('sheet', '')}' needs the "
-                           f"source xlsx for row values, but it is not accessible: {doc_path}; "
-                           f"its variables will be reported unresolved")
+            dict_vars = sheet.get("dict_variables")
+            if dict_vars:
+                for ds, variables in dict_vars.items():
+                    entry = index.setdefault(norm(ds), {
+                        "sheet": sheet_name, "doc_id": doc.get("doc_id"),
+                        "columns": {}, "layout": "dictionary",
+                    })
+                    for var in variables:
+                        entry["columns"].setdefault(norm(var), var)
+                continue
+            if _detect_dictionary_columns(headers) is not None:
+                # Dictionary-style headers but no dict_variables: doc-map was
+                # produced by an older probe_docs.py. Never index the headers as
+                # variables (Dataset/Variable/Label are not variable names).
+                eprint(f"warning: sheet '{sheet_name}' looks like a dictionary layout but "
+                       f"doc-map.json has no dict_variables for it — re-run "
+                       f"'probe_docs.py extract' with the current version; its variables "
+                       f"will be reported unresolved")
                 continue
             # Form layout: sheet name is the dataset/form, headers are variables.
-            cols = {}
-            for h in headers:
-                cols.setdefault(norm(h), h)
-            entry = index.setdefault(norm(sheet.get("sheet", "")), {
-                "sheet": sheet.get("sheet", ""),
+            entry = index.setdefault(norm(sheet_name), {
+                "sheet": sheet_name,
                 "doc_id": doc.get("doc_id"),
                 "columns": {},
                 "layout": "form",
             })
             entry["doc_id"] = doc.get("doc_id")
-            entry["columns"].update(cols)
+            for h in headers:
+                entry["columns"].setdefault(norm(h), h)
     return index
 
 
