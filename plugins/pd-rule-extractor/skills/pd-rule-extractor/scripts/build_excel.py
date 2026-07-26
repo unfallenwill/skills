@@ -290,7 +290,7 @@ def main() -> int:
     parser.add_argument("--generated-at", default=None,
                         help="Timestamp string (YYYY-MM-DD HH:MM:SS). Defaults to now.")
     parser.add_argument("--categories", default=None,
-                        help="Comma-separated category list overriding the default 11.")
+                        help="Comma-separated category list overriding the default 11 (debug use only; the category literals are fixed by contract).")
     parser.add_argument("--loop-rounds", type=int, default=None,
                         help="Number of gap-fix loop rounds executed in stage 5 "
                              "(recorded on the notes sheet as exhaustiveness evidence).")

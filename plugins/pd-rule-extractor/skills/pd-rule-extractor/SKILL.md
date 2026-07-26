@@ -68,7 +68,7 @@ version: 0.1.0
 
 ### 阶段 4 — 对抗性审核
 
-每条规则独立派发 3 个审核子任务实例（模板：`references/reviewer-prompt.md`），各投结构化一票（pass/fail + 理由），≥2 票 pass 为通过。投票写入 `reviews/<rule_id>.jsonl`。未通过的规则**不淘汰**：保留在最终表中，备注列标注"审核未通过：<理由摘要>"，`review_status` 记 failed。
+每条规则独立派发 3 个审核子任务实例（模板：`references/reviewer-prompt.md`），各投结构化一票（pass/fail + 理由），≥2 票 pass 为通过。投票写入 `reviews/<rule_id>.jsonl`。未通过的规则**不淘汰**：保留在最终表中，`review_status` 记 failed、fail 票理由归纳写入 `review_notes`（≤80 字），备注列由 build_excel 依此自动标注"审核未通过：<理由摘要>"（写入方唯一，remarks 不手写该句）。
 
 ### 阶段 5 — 完整性审查与生成
 

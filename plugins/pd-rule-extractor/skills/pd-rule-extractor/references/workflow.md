@@ -85,7 +85,7 @@ uv run scripts/build_excel.py --workdir .pd-extraction --output <输出路径.xl
 
 1. **确定性预合并**：规范化键 = `category + (condition 与 description 去标点、去空白、小写化后的词干)`；键完全相同的候选直接合并。
 2. **语义合并**：按键排序后把高度相似的候选分组（同类别、词面重叠度高），派子任务判断组内是否同一偏离；判断依据：同一源要求、同一数据点、仅措辞或详略不同。
-3. **主规则选择**：组内信息最全者（condition 含量化判据、字段最齐、来源最全）为主规则；其余规则的来源文件/定位并入主规则的 source_files/source_locator（分号连接）；各来源的原始规则编号并入 original_rule_ids；被合并重复项的标识（原始规则编号，无编号时用 `来源文件:定位`）记入 duplicate_of（对应 Excel"重复规则指向"列）。
+3. **主规则选择**：组内信息最全者（condition 含量化判据、字段最齐、来源最全）为主规则；其余规则的来源文件/定位并入主规则的 source_files/source_locator（分号连接）；各来源的原始规则编号并入 original_rule_ids；被合并重复项的标识（原始规则编号，无编号时用 `来源文件:定位`）记入 duplicate_of（对应 Excel"重复规则指向"列）。rationale 保留主规则者；被合并项 rationale 有主规则缺失的视角时，以一句话并入主规则 rationale。
 4. 合并后主规则 remarks 记 `N源合并`（N = 并入的来源数 ≥ 2 才记）；被合并规则不单独成行、不分配规则编号——每组仅主规则进入 rules-written.jsonl，重复项的完整记录保留在 rules-deduped.jsonl 供审计。最终表每行对应一个去重后的偏离，每条都参与阶段 4 审核。
 
 ## 规则编写细则（阶段 3）

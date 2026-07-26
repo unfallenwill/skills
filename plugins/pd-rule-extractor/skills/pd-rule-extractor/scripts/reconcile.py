@@ -126,7 +126,7 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--workdir", required=True, help="Working directory (.pd-extraction).")
     parser.add_argument("--categories", default=None,
-                        help="Comma-separated category list overriding the default 11.")
+                        help="Comma-separated category list overriding the default 11 (debug use only; the category literals are fixed by contract).")
     parser.add_argument("--summary", action="store_true",
                         help="Print human-readable summary only (still writes JSON outputs).")
     args = parser.parse_args()

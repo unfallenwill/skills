@@ -1,6 +1,8 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = [
+#   "openpyxl>=3.1",
+# ]
 # ///
 """Verify that every dataset.variable referenced by rule conditions and fields
 actually exists in the source documents.
@@ -57,6 +59,12 @@ def norm(name: str) -> str:
     return re.sub(r"[\s_\-]+", "", name).lower()
 
 
+# Header names marking a dictionary-layout sheet (one row per variable):
+# a column holding the dataset name + a column holding the variable name.
+DATASET_HEADER_CANDIDATES = {"dataset", "数据集", "ds", "table", "表", "数据表"}
+VAR_HEADER_CANDIDATES = {"variable", "变量", "var", "field", "字段", "列", "变量名"}
+
+
 def load_json(path: Path, what: str):
     if not path.exists():
         return None
@@ -81,22 +89,85 @@ def load_jsonl(path: Path, what: str) -> list[dict]:
     return rows
 
 
+def _index_dictionary_sheet(xlsx_path: Path, sheet_name: str,
+                            headers: list[str], doc_id, index: dict) -> bool:
+    """Row-based dictionary layout (Dataset | Variable | Label ...): read the
+    source xlsx and index dataset names from row values. Returns True if the
+    sheet was handled as a dictionary sheet."""
+    norm_headers = [norm(h) for h in headers]
+    ds_candidates = {norm(c) for c in DATASET_HEADER_CANDIDATES}
+    var_candidates = {norm(c) for c in VAR_HEADER_CANDIDATES}
+    ds_idx = next((i for i, h in enumerate(norm_headers) if h in ds_candidates), None)
+    var_idx = next((i for i, h in enumerate(norm_headers) if h in var_candidates), None)
+    if ds_idx is None or var_idx is None or ds_idx == var_idx:
+        return False
+    from openpyxl import load_workbook
+    try:
+        wb = load_workbook(str(xlsx_path), read_only=True, data_only=True)
+    except Exception as exc:
+        eprint(f"warning: cannot open {xlsx_path} for dictionary sheet {sheet_name}: {exc}")
+        return True  # treat as handled; sheet simply contributes nothing
+    if sheet_name not in wb.sheetnames:
+        wb.close()
+        return True
+    ws = wb[sheet_name]
+    rows = ws.iter_rows(values_only=True)
+    header_row_idx = next(
+        (i for i, r in enumerate(rows) if any(v is not None and str(v).strip() for v in r)),
+        None,
+    )
+    if header_row_idx is None:
+        wb.close()
+        return True
+    for row in ws.iter_rows(min_row=header_row_idx + 2, values_only=True):
+        ds = row[ds_idx] if ds_idx < len(row) else None
+        var = row[var_idx] if var_idx < len(row) else None
+        if ds is None or var is None:
+            continue
+        ds, var = str(ds).strip(), str(var).strip()
+        if not ds or not var:
+            continue
+        entry = index.setdefault(norm(ds), {
+            "sheet": sheet_name, "doc_id": doc_id, "columns": {}, "layout": "dictionary",
+        })
+        entry["columns"].setdefault(norm(var), var)
+    wb.close()
+    return True
+
+
 def build_index(doc_map: dict) -> dict[str, dict]:
-    """sheet-name (normalized) -> {sheet, doc_id, columns: {norm: original}}."""
+    """sheet/dataset-name (normalized) -> {sheet, doc_id, columns: {norm: original}}.
+
+    Only DB-design documents (role == "dbdesign") contribute — DVP xlsx sheets
+    must not pollute the index (they would turn a missing DB-design index into
+    spurious 'dataset not in index' failures). Two xlsx layouts are supported:
+    per-form sheets (sheet name = dataset/form, header row = variables) and
+    dictionary sheets (one row per variable with Dataset/Variable columns).
+    """
     index: dict[str, dict] = {}
     for doc in doc_map.get("documents", []):
+        if doc.get("role") != "dbdesign":
+            continue
+        doc_path = Path(doc.get("path", ""))
         for sheet in doc.get("sheets", []):
+            headers = [str(h).strip() for h in sheet.get("headers", []) if str(h).strip()]
+            if not headers:
+                continue
+            if doc.get("format") == "xlsx" and doc_path.exists() and _index_dictionary_sheet(
+                    doc_path, sheet.get("sheet", ""), headers, doc.get("doc_id"), index):
+                continue
+            # Form layout: sheet name is the dataset/form, headers are variables.
             cols = {}
-            for h in sheet.get("headers", []):
-                h = str(h).strip()
-                if h:
-                    cols.setdefault(norm(h), h)
-            if cols:
-                index.setdefault(norm(sheet.get("sheet", "")), {
-                    "sheet": sheet.get("sheet", ""),
-                    "doc_id": doc.get("doc_id"),
-                    "columns": cols,
-                })
+            for h in headers:
+                cols.setdefault(norm(h), h)
+            entry = index.setdefault(norm(sheet.get("sheet", "")), {
+                "sheet": sheet.get("sheet", ""),
+                "doc_id": doc.get("doc_id"),
+                "columns": {},
+                "layout": "form",
+            })
+            entry["doc_id"] = doc.get("doc_id")
+            entry["columns"].update(cols)
     return index
 
 
