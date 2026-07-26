@@ -47,8 +47,17 @@
 **候选规则行**（每条规则一行）：
 
 ```json
-{"doc_id": "{doc_id}", "category": "{category}", "subcategory": "<子类短语>", "description": "<什么情形构成偏离，一句话>", "condition": "<可执行判定逻辑：阈值/窗口/比较对象>", "visits": "<相关访视，逗号分隔；全程适用写所有访视；不适用留空>", "forms": "<相关 CRF 表单名；未知留空>", "fields": "<判定逻辑引用的字段/数据点>", "source_locator": "<定位锚点：docx §章节路径 / xlsx <Sheet>!R<行> / pdf p.<页码>；多处用分号>", "original_rule_ids": "<源文档自带编号；无则留空>"}
+{"doc_id": "{doc_id}", "category": "{category}", "subcategory": "<子类短语>", "description": "<什么情形构成偏离，一句话>", "condition": "<SQL 风格形式化表达式，见下方书写规范>", "visits": "<相关访视，逗号分隔；全程适用写所有访视；不适用留空>", "forms": "<相关 CRF 表单名；未知留空>", "fields": "<判定逻辑引用的全部变量，数据集.变量 全限定，逗号分隔>", "source_locator": "<定位锚点：docx §章节路径 / xlsx <Sheet>!R<行> / pdf p.<页码>；多处用分号>", "original_rule_ids": "<源文档自带编号；无则留空>"}
 ```
+
+### condition 与 fields 书写规范（强制）
+
+1. **先解析变量**：写 condition 前，把规则涉及的数据点解析为 `数据集.变量`。解析依据：`.pd-extraction/variables.jsonl`（存在时优先）或数据库设计说明/CRF 文档的 chunks。中文数据点必须映射到具体变量（如"访视日期" → `VISIT.VISDAT`）。
+2. **condition 只写 SQL 风格形式化表达式**：比较/逻辑运算、`IN`/`BETWEEN`、`EXISTS`/`NOT EXISTS`、`DATEDIFF(end, start, 'unit')`、`IS NULL`、`ABS`、括号与字面量。漏采/未报告用 `NOT EXISTS (...)`，超窗/超时用 `DATEDIFF(...) + 阈值`，禁止"存在""未记录""及时"等自然语言。
+3. **变量全限定**：condition 与 fields 中一律 `数据集.变量`，禁止裸变量名（不同数据集可存在同名列）；condition 出现的变量与 fields 列出的一致。
+4. **阈值带单位**：保留源文件原始数值与单位。
+5. **无法解析到变量时**：不得臆造变量名——condition 照录源文件量化表述，在 description 末尾注明"（变量未解析）"，并在返回摘要中列出未解析数据点。
+6. **源文件确实未量化时**：照录原文表述，description 末尾注明"（源文件未量化）"。此为例外，尽量少用。
 
 **确认无哨兵行**（`all` 模式下三遍扫描均无任何候选时，必须且只写一行）：
 
@@ -62,10 +71,10 @@
 
 - 每格必须落盘文件且非空：要么至少一条候选规则行，要么一行确认无哨兵行。空文件视为未执行。
 - 一条规则一个对象：入排标准逐条、禁用药物逐条/逐类、评估时间表逐行，不概括合并。
-- condition 必须含可判定的比较；源文件未量化时照录原文表述，并在 description 末尾注明"（源文件未量化）"。
+- condition/fields 按上方书写规范执行：SQL 风格表达式、`数据集.变量` 全限定、无自然语言残留。
 - source_locator 逐条必填且必须能在对应 chunk 中找到原文；不臆造文档中不存在的要求。
 - 不做跨块去重、不做跨类别归并——那是下游阶段的事；宁可重复，不可遗漏。
-- 语言跟随源文件。
+- 语言跟随源文件（condition 表达式中的变量名与运算符除外，一律按规范书写）。
 
 ---
 

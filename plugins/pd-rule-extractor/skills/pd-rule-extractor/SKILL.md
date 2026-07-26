@@ -52,7 +52,7 @@ version: 0.1.0
 
 ### 阶段 1 — 分块穷尽提取
 
-读 `references/pd-taxonomy.md`（11 类别体系）与 `references/extractor-prompt.md`（提取提示词模板）。按（文档 × 11 类别）覆盖矩阵派发提取子任务：每格必须显式产出候选规则 JSONL 或"确认无"哨兵行，写入 `candidates/<docid>__<类别>.jsonl`。每格以三个视角多通道提取后取并集——按章节顺序通读、按类别驱动检索、专扫表格/流程图/脚注。DVP 文档另派**一个独立一次性任务**（不随矩阵格）逐条抄录全部规则到 `dvp-rules.jsonl`（rule_id、locator、原文），供阶段 5 对账。
+读 `references/pd-taxonomy.md`（11 类别体系）与 `references/extractor-prompt.md`（提取提示词模板）。按（文档 × 11 类别）覆盖矩阵派发提取子任务：每格必须显式产出候选规则 JSONL 或"确认无"哨兵行，写入 `candidates/<docid>__<类别>.jsonl`。每格以三个视角多通道提取后取并集——按章节顺序通读、按类别驱动检索、专扫表格/流程图/脚注。另派两个独立一次性任务（不随矩阵格）：DVP 文档逐条抄录全部规则到 `dvp-rules.jsonl`（rule_id、locator、原文）；数据库设计说明/CRF 提取变量字典到 `variables.jsonl`（数据集、变量、标签、所属表单），供判定逻辑按 `数据集.变量` 全限定书写。
 
 ### 阶段 2 — 去重合并
 
@@ -60,7 +60,7 @@ version: 0.1.0
 
 ### 阶段 3 — 规则编写
 
-按 `references/output-format.md` 的 14 列规范把每条去重规则写完整：判定逻辑必须可执行（含阈值、窗口、比较对象，摒弃"及时/适当"类模糊词），严重程度依 `severity-criteria.md` 判定，未定义则留空。规则编号自 PD-001 起连续分配。产出 `rules-written.jsonl`。
+按 `references/output-format.md` 的 14 列规范把每条去重规则写完整：判定逻辑写 **SQL 风格形式化表达式**（比较/逻辑、IN/BETWEEN、EXISTS/NOT EXISTS、DATEDIFF 等），变量一律 `数据集.变量` 全限定、可经 variables.jsonl 解析，零自然语言残留（语法硬约束见 output-format.md "判定逻辑表达式语法"）；严重程度依 `severity-criteria.md` 判定，未定义则留空。规则编号自 PD-001 起连续分配。产出 `rules-written.jsonl`。
 
 ### 阶段 4 — 对抗性审核
 

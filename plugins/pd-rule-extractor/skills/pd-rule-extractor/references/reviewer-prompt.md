@@ -6,6 +6,7 @@
 - `{source_excerpt}` — 按 `source_locator` 从 chunks 中取出的来源原文片段（可多条，逐条标注定位）
 - `{peer_rules_digest}` — 同类别其他规则的 (rule_id, subcategory, description) 摘要清单，供重复检查
 - `{severity_criteria}` — severity-criteria.md 全文（源文档未定义时该占位符为"未定义"）
+- `{variables_dictionary}` — 变量字典（variables.jsonl 的数据集.变量清单；无该文件时注明"以 dbdesign chunks 为准"）
 - `{instance_id}` — 审核实例序号（1/2/3），仅用于记录，不影响审核
 
 ---
@@ -40,7 +41,7 @@
 
 ### 审核维度（逐一出结论）
 
-1. **判定逻辑可执行性**：condition 是否含明确可判定的比较（阈值、窗口、比较对象）？是否存在"及时/适当/按规定"类无判据模糊词而未按规范注明"源文件未量化"？能否用 fields 列出的数据点直接判定？
+1. **判定逻辑可编译性**：condition 是否为纯 SQL 风格形式化表达式（比较/逻辑运算、IN/BETWEEN、EXISTS/NOT EXISTS、DATEDIFF、IS NULL、ABS、字面量）？变量是否全部 `数据集.变量` 全限定、且能在给定变量字典中解析（不臆造）？漏采/未报告/超窗/超时类偏离是否落到 `NOT EXISTS` / `DATEDIFF` 谓词？有无任何自然语言残留（"存在""未记录""及时"等）？condition 出现的变量与 fields 列出的是否一致？
 2. **来源可溯且准确**：source_locator 指向的原文是否真实包含该规则的要求？description/condition 是否忠实原文，有无夸大、缩小、曲解阈值或窗口？数字是否与原文一致？
 3. **类别归属正确**：category 是否符合 11 类别体系中该类别的定义？是否更应归入其他类别（参考归类冲突处理：按偏离对象定类）？
 4. **重复检查**：与同类别其他规则比对，是否描述同一偏离（同一要求、同一数据点、仅措辞不同）？若是重复，指出应与哪条合并。
@@ -51,7 +52,7 @@
 只输出一个 JSON 对象（无其他文本），由主执行者追加写入 `.pd-extraction/reviews/<rule_id>.jsonl`：
 
 ```json
-{"rule_id": "<待审规则编号>", "reviewer_instance": {instance_id}, "verdict": "pass 或 fail", "dimension_results": {"executability": "pass/fail", "traceability": "pass/fail", "categorization": "pass/fail", "duplication": "pass/fail", "consistency": "pass/fail"}, "reasons": ["<fail 维度的具体理由，引用原文或规则字段为据>"], "suggested_fix": "<若 fail：最小修复建议；若 pass：留空字符串>"}
+{"rule_id": "<待审规则编号>", "reviewer_instance": {instance_id}, "verdict": "pass 或 fail", "dimension_results": {"compilability": "pass/fail", "traceability": "pass/fail", "categorization": "pass/fail", "duplication": "pass/fail", "consistency": "pass/fail"}, "reasons": ["<fail 维度的具体理由，引用原文或规则字段为据>"], "suggested_fix": "<若 fail：最小修复建议；若 pass：留空字符串>"}
 ```
 
 **投票纪律：**

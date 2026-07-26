@@ -12,7 +12,7 @@
                                                   （阶段5 的补提循环会回到阶段1→4 处理新增规则）
 ```
 
-- 阶段 1 内部：矩阵各格相互独立，可任意并行。DVP 全量抄录为独立一次性任务（模板见 extractor-prompt.md 末节），不随矩阵格派发。
+- 阶段 1 内部：矩阵各格相互独立，可任意并行。DVP 全量抄录、变量字典提取为两个独立一次性任务（不随矩阵格派发；DVP 抄录模板见 extractor-prompt.md 末节），变量字典从数据库设计说明/CRF 提取（数据集、变量、标签、所属表单），供判定逻辑全限定书写与审核解析。
 - 阶段 4 内部：每条规则的 3 个审核实例相互独立，可任意并行。
 - 阶段 5 时序（首轮 critic 依赖 reconcile 产出，不可颠倒）：先做初始对账——汇总 candidates 哨兵行写入 none-confirmed.json、写首版 dvp-mapping.json、跑 reconcile → 进入 critic 循环（每轮 = critic 审查 → 定向补提走阶段1→4 子集 → 同步更新映射与哨兵 → 重跑 reconcile）→ 连续两轮无新增（clean）且 reconcile 退出码 0 收敛 → build_excel（`--loop-rounds` 传实际轮数）。
 
@@ -27,6 +27,7 @@
 | `severity-criteria.md` | 0 | 主执行者 | 从方案/DVP 提炼的严重程度判定标准（含来源定位）；未定义时写明"未定义" |
 | `candidates/<docid>__<类别>.jsonl` | 1 | 提取子任务 | 候选规则行 + 或确认无哨兵行（schema 见 extractor-prompt.md）。每格必有一个非空文件 |
 | `dvp-rules.jsonl` | 1 | 独立抄录任务（一次性，不随矩阵格） | DVP 全部规则逐条抄录：`rule_id`、`locator`、`text` |
+| `variables.jsonl` | 1 | 独立抄录任务（一次性，不随矩阵格） | 数据库设计说明/CRF 的变量字典：每行 `dataset`、`variable`、`label`、`form` |
 | `rules-deduped.jsonl` | 2 | 主执行者+合并子任务 | 去重后规则（含 duplicate_of、remarks 的合并标注），尚无最终 rule_id |
 | `rules-written.jsonl` | 3 | 主执行者 | 14 列写全的规则，rule_id 自 PD-001 连续分配（字段契约见 output-format.md 映射表） |
 | `reviews/<rule_id>.jsonl` | 4 | 审核子任务 | 每文件 3 行投票（schema 见 reviewer-prompt.md） |
@@ -84,5 +85,5 @@ uv run scripts/build_excel.py --workdir .pd-extraction --output <输出路径.xl
 ## 规则编写细则（阶段 3）
 
 - 按 PD 类别字面量顺序排序后分配 PD-001 起的连续编号；补提循环新增的规则追加在现有最大编号之后，不重排已有编号。
-- 逐条对照 output-format.md 的 14 列规范填写；`review_status`/`review_notes` 在阶段 4 后回填。
+- 逐条对照 output-format.md 的 14 列规范填写；判定逻辑严格按"判定逻辑表达式语法（SQL 风格）"书写，变量一律 `数据集.变量` 全限定、可经 variables.jsonl 解析，零自然语言残留；`review_status`/`review_notes` 在阶段 4 后回填。
 - 严重程度：读 severity-criteria.md 逐条判定；记录"未定义"则整列留空；配置 severity_override 则统一覆盖。
