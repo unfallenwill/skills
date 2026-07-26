@@ -1,0 +1,23 @@
+{
+  "generated_from": {
+    "dvp_rules": "dvp-rules.jsonl",
+    "pd_rules": "rules-written.jsonl"
+  },
+  "mappings": [
+    {
+      "dvp_rule_id": "DVP-EC-014",
+      "status": "mapped",
+      "pd_rule_id": "PD-001"
+    },
+    {
+      "dvp_rule_id": "DVP-EC-015",
+      "status": "mapped",
+      "pd_rule_id": "PD-001"
+    },
+    {
+      "dvp_rule_id": "DVP-DF-003",
+      "status": "non-pd",
+      "reason": "该规则为数据录入格式核查（日期字段格式须为 DD-MMM-YYYY），属数据质量控制，不构成方案偏离"
+    }
+  ]
+}

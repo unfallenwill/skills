@@ -1,0 +1,9 @@
+# Local settings (per-project plugin configuration)
+.claude/*.local.md
+
+# Python
+__pycache__/
+*.pyc
+
+# Working directories produced by the skill
+.pd-extraction/

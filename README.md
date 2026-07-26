@@ -11,6 +11,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [otel-dev](plugins/otel-dev/) | Skill, Agent | Language-agnostic methodology for bootstrapping the OpenTelemetry SDK and applying semantic conventions correctly |
 | [import-linter](plugins/import-linter/) | Skill | Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend configs, and interpret lint-imports failures |
 | [interview-prep](plugins/interview-prep/) | Skill, Agent | Generate personalized interview questions, outlines, follow-up probes, and scoring rubrics from candidate resumes |
+| [pd-rule-extractor](plugins/pd-rule-extractor/) | Skill | Exhaustively extract protocol deviation (PD) rules from clinical trial documents into a fixed-format Excel table, with dedup, 3-vote adversarial review, and auditable coverage evidence |
 
 ## Installation
 
@@ -26,6 +27,7 @@ Install via the marketplace (recommended):
 /plugin install otel-dev@treadonsnow-skills
 /plugin install import-linter@treadonsnow-skills
 /plugin install interview-prep@treadonsnow-skills
+/plugin install pd-rule-extractor@treadonsnow-skills
 ```
 
 ## Plugin structure

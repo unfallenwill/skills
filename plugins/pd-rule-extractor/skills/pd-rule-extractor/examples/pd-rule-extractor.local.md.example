@@ -1,0 +1,31 @@
+---
+# PD 规则表 Excel 输出路径（相对当前工作目录；默认 ./PD规则表.xlsx）
+output_path: ./output/PD规则表_示例项目.xlsx
+
+# 严重程度覆盖：非 null 时全部规则统一取该值，忽略源文档中提炼的判定标准；
+# null（默认）表示不覆盖，按 .pd-extraction/severity-criteria.md 逐条判定。
+# 示例：severity_override: "Major"
+severity_override: null
+
+# 子任务并发上限：有 subagent/委派机制的运行时生效（默认 4）；
+# 无委派机制的运行时忽略本项，一律顺序执行。
+concurrency: 4
+
+# 规则语言覆盖：null（默认）= 跟随源文件语言；可设 zh / en 强制规则表语言。
+language_override: null
+---
+
+# pd-rule-extractor 项目级配置
+
+本文件为可选配置，置于项目 `.claude/` 目录下，文件名固定为
+`pd-rule-extractor.local.md`。skill 启动时读取 YAML frontmatter，
+缺失的字段取默认值；整个文件缺失也能正常运行。
+
+- **output_path**：最终 Excel 的写出位置，同时决定工作目录
+  `.pd-extraction/` 的落盘位置（输出文件所在目录）。
+- **severity_override**：用于源文档未定义严重程度分级、但项目方要求统一
+  标注的场景；设置后严重程度列统一取该值，覆盖声明经
+  `.pd-extraction/severity-criteria.md` 反映在说明 sheet。
+- **concurrency**：仅影响派发扇出宽度，不影响产出契约。
+- **language_override**：仅当源文件为多语言混合、需要统一规则表语言时
+  使用。

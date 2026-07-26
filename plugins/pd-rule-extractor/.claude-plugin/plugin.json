@@ -1,0 +1,15 @@
+{
+  "name": "pd-rule-extractor",
+  "version": "0.1.0",
+  "description": "从临床试验源文件（试验方案、数据核查计划、数据库设计说明）穷尽提取方案偏离（PD）判断规则，经去重合并与逐条对抗性审核后，生成固定格式的 PD 规则表 Excel",
+  "author": {
+    "name": "treadonsnow"
+  },
+  "keywords": [
+    "clinical-trial",
+    "protocol-deviation",
+    "data-management",
+    "excel",
+    "extraction"
+  ]
+}
