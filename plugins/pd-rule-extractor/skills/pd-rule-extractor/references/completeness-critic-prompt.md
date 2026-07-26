@@ -40,5 +40,5 @@
 
 1. 按 gap 清单派发定向补提/复核任务；新增候选走阶段 1→4 全流程（提取、去重、编写、审核）后并入 rules-written.jsonl。
 2. 每轮结束重跑 `scripts/reconcile.py` 刷新 coverage.json / reconciliation.json，再派下一轮 critic。
-3. **连续两轮 critic 输出 clean（或两轮新增规则数均为 0）即收敛**，停止循环。
+3. **连续两轮 critic 输出 clean（两轮新增规则数均为 0）且 reconcile 退出码为 0 即收敛**，停止循环。
 4. 实际轮数与收敛方式写入说明 sheet 的穷尽性证据。
