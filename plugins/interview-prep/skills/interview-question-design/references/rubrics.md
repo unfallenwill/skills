@@ -11,7 +11,7 @@ Templates for consistent interviewer scoring. Attach one rubric row per intervie
 | 2 | Lean no | Below the bar on important signals; some mitigating strengths |
 | 1 | Strong no | Clearly below the bar; fundamental gaps |
 
-Score each module independently, then form the overall recommendation. Do not average scores into mush — a 1 on a core competency usually vetoes two 4s elsewhere.
+Score each module independently, then form the overall recommendation.
 
 ## Signal Anchors per Module
 
@@ -65,30 +65,6 @@ Weights shift by level: juniors weight coding/fundamentals higher; staff weights
 - **Strong hire**: no score below 3, at least one 4 on a core module.
 - **Hire**: mostly 3s, no 1s, weak spots coachable at target level.
 - **No hire**: any 1 on a core module, or a pattern of 2s.
-- **Strong no hire**: multiple 1s, or integrity red flags (dishonest claims, fabricated metrics) regardless of other scores.
+- **Strong no hire**: multiple 1s, or integrity red flags regardless of other scores.
 
 Integrity red flags are automatic strong-no: fabricated project claims, metrics the candidate admits were invented, claiming others' work when probed.
-
-## Interviewer Feedback Template
-
-```markdown
-## Interview Feedback — <Candidate> — <Date>
-**Interviewer**: <name>  **Module**: <module>  **Target level**: <level>
-
-### Scores
-<rubric table with scores filled in>
-
-### Evidence
-- <quote/summary of what the candidate actually said or did, per key question>
-
-### Strengths observed
-- ...
-
-### Concerns / risks
-- ...
-
-### Recommendation
-<strong hire / hire / no hire / strong no hire> — one-sentence justification.
-```
-
-Evidence rule: write down what the candidate SAID, not interpretations. "Candidate couldn't explain index choice" is evidence; "candidate seems junior" is interpretation.

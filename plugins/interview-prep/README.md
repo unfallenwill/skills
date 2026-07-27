@@ -47,17 +47,7 @@ After the package is shown, you can optionally save it as a Markdown file.
 
 ## Team Settings (Optional)
 
-Create `.claude/interview-prep.local.md` in your project root to set team defaults (explicit arguments always override):
-
-```yaml
----
-level: senior
-role: backend
-duration: 60
-tech_stack: [Go, Kubernetes, PostgreSQL]
-interview_type: technical
----
-```
+Create `.claude/interview-prep.local.md` in your project root to set team defaults (explicit arguments always override). Full example frontmatter lives in `skills/interview-prep/SKILL.md`; the fields are:
 
 | Field | Default | Purpose |
 |---|---|---|
@@ -65,7 +55,6 @@ interview_type: technical
 | `role` | inferred | Default role direction |
 | `duration` | `60` | Interview length in minutes (drives outline timeline) |
 | `tech_stack` | — | Team's stack; overlapping candidate skills get prioritized probes |
-| `interview_type` | `technical` | `technical` / `behavioral` / `system-design` / `mixed` |
 
 Add `.claude/*.local.md` to your `.gitignore` if you don't want to commit these.
 
@@ -88,3 +77,7 @@ Add `.claude/*.local.md` to your `.gitignore` if you don't want to commit these.
 ## License
 
 MIT
+
+---
+
+**For maintainers**: `interview-prep` (Step 4) reads `interview-question-design`'s SKILL.md and reference files via `${CLAUDE_PLUGIN_ROOT}` paths. If those files are renamed or moved, update `skills/interview-prep/SKILL.md` accordingly.

@@ -16,11 +16,7 @@ Example ladder (candidate claims "3 years of PostgreSQL"):
 4. "What indexes did you consider, and what write-amplification trade-off did each introduce?" (trade-offs)
 5. "How would this behave at 100x the data volume?" (failure modes)
 
-Depth reading:
-
-- Stops at level 1–2 → used the tool, doesn't understand it.
-- Reaches 3 → solid working depth (expected for mid/senior).
-- Reaches 4–5 with ease → genuine expert (senior/staff signal).
+Scoring the depth reached: use the Technical depth anchors in `rubrics.md`.
 
 ## 2. Project / Behavioral (STAR)
 
@@ -38,7 +34,7 @@ Follow-up ladder:
 4. "If you did it again, what would you change?" — exposes reflection and growth.
 5. "What metric improved, and how was it measured?" — verifies claimed impact (ask for the before/after numbers from the resume).
 
-Red flags: consistent "we" without "I"; no rejected alternatives; metrics that can't be explained; blame-only failure stories.
+Scoring ownership signals (including "we" without "I", unexplained metrics, blame-only failures): use the Project ownership anchors in `rubrics.md`.
 
 ## 3. Coding / Debugging
 
@@ -50,7 +46,7 @@ Good formats:
 - **Code review**: show a ~40-line snippet with 3–4 planted issues (race condition, resource leak, edge-case bug); ask the candidate to review it.
 - **Debugging scenario**: "Production latency doubled after this deploy — here are the symptoms. Walk me through your investigation."
 
-Assess: problem clarification before coding, edge-case handling, naming/structure, ability to explain while working, testing instinct.
+Scoring: use the Coding / debugging anchors in `rubrics.md`.
 
 ## 4. System Design
 
@@ -69,7 +65,7 @@ Escalation points:
 5. Scale: "Now 100x the traffic — what breaks first?"
 6. Failure: "A downstream dependency is down — what happens to users?"
 
-Assess: requirement discovery, justified (not buzzword) technology choices, explicit trade-off articulation, honest unknowns.
+Scoring: use the System design anchors in `rubrics.md`.
 
 ## 5. Leadership / Strategy (staff+)
 

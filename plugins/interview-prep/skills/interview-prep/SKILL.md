@@ -1,6 +1,6 @@
 ---
 name: interview-prep
-description: This skill should be used when the user invokes "/interview-prep", asks to "prepare interview questions from a resume", "generate an interview plan for a candidate", "create interview questions based on this CV", or provides a resume file and wants personalized interview questions, an interview outline, follow-up probes, or a scoring rubric. Designed for hiring managers and technical interviewers preparing for upcoming interviews.
+description: This skill should be used when the user invokes "/interview-prep", asks to "prepare interview questions from a resume", "generate an interview plan for a candidate", "create interview questions based on this CV", or provides a resume file and wants personalized interview questions, an interview outline, follow-up probes, or a scoring rubric.
 argument-hint: <resume-file-path-or-pasted-text> [level] [role]
 allowed-tools: Read, Bash, Agent, Write
 ---
@@ -33,7 +33,6 @@ level: senior            # default target level
 role: backend            # default role direction
 duration: 60             # interview length in minutes
 tech_stack: [Go, Kubernetes, PostgreSQL]  # team's stack — prioritize probing these
-interview_type: technical  # technical | behavioral | system-design | mixed
 ---
 ```
 
@@ -69,12 +68,18 @@ State the inferred level/role and reasoning in one line; the user can correct it
 
 ### Step 3: Analyze the resume with the resume-analyzer agent
 
-Dispatch the `resume-analyzer` agent via the Agent tool. Pass the FULL resume text plus the determined level and role in the prompt. Request its structured analysis covering: profile summary, tech stack with evidence-based depth, experience timeline, highlights, risk signals (job hopping, gaps, title inflation, vague claims), and verification points (claims worth probing).
+Dispatch the `resume-analyzer` agent via the Agent tool, in the same message block as the reference reads in Step 4 — they are independent.
+
+- If the resume came from a file, pass the file path (the agent has Read access).
+- If the resume was pasted, include the full resume text in the dispatch prompt.
+
+Always include the determined level and role. The agent's structured report format is defined in its own prompt — use its output directly.
 
 ### Step 4: Load question-design methodology
 
-Read the methodology references before writing questions:
+Read these files before writing questions (can share the message block with the Step 3 dispatch):
 
+- `${CLAUDE_PLUGIN_ROOT}/skills/interview-question-design/SKILL.md` — core principles, design process, anti-patterns
 - `${CLAUDE_PLUGIN_ROOT}/skills/interview-question-design/references/question-patterns.md` — question types, level calibration, probing chains
 - `${CLAUDE_PLUGIN_ROOT}/skills/interview-question-design/references/rubrics.md` — scoring rubric templates
 
@@ -90,12 +95,11 @@ Structure the package exactly as:
    - The question itself
    - **Assessment point**: what signal the question measures
    - **Expected answer highlights**: what a strong answer covers
-4. **Personalized Follow-up Probes** — 3–5 STAR-style probing chains anchored to SPECIFIC claims in the resume (exact project names, metrics, technologies). Each chain: opening question → 2–3 escalating follow-ups → what each level of answer reveals. Reference the agent's verification points.
-5. **Scoring Rubric** — evaluation table per module: dimension, strong/mixed/weak answer signals, weight. End with an overall hire/no-hire guidance note.
+4. **Personalized Follow-up Probes** — 3–5 probing chains, one per top verification point from the agent. Build them with the STAR pattern and Personalization Checklist from question-patterns.md, anchored to SPECIFIC resume claims (exact project names, metrics, technologies).
+5. **Scoring Rubric** — apply the Per-Module Rubric Table template and Overall Recommendation Guidance from rubrics.md.
 
 Question quality bar:
-- Anchor every question to the resume or the target level — no generic filler questions.
-- Match difficulty to level (see question-patterns.md calibration tables).
+- Apply the Core Principles and Anti-Patterns loaded in Step 4 — no generic filler questions.
 - Prioritize technologies in the team settings `tech_stack` when they overlap with the candidate's background.
 - Include at least one question probing each risk signal the agent flagged.
 

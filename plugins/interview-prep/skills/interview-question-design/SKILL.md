@@ -1,6 +1,6 @@
 ---
 name: interview-question-design
-description: This skill should be used when the user asks to "design interview questions", "create an interview rubric", "how to interview candidates", "write behavioral interview questions", "design technical interview questions", "calibrate interview difficulty", or discusses interview question quality, STAR probing, follow-up techniques, or interviewer scoring. Provides methodology for writing effective, level-calibrated interview questions and evaluation rubrics.
+description: This skill should be used when the user asks to "design interview questions", "create an interview rubric", "how to interview candidates", "write behavioral interview questions", "design technical interview questions", "calibrate interview difficulty", or discusses interview question quality, STAR probing, follow-up techniques, or interviewer scoring. For generating a complete interview package from a specific candidate's resume, the interview-prep skill handles that workflow instead.
 ---
 
 # Interview Question Design
@@ -27,9 +27,9 @@ Methodology for designing interview questions that produce reliable hiring signa
 
 Detailed patterns, example questions, follow-up ladders, and level calibration: **`references/question-patterns.md`**.
 
-Scoring rubric templates, signal anchors (strong/mixed/weak), and interviewer feedback format: **`references/rubrics.md`**.
+Scoring rubric templates, signal anchors (strong/mixed/weak), and hire/no-hire guidance: **`references/rubrics.md`**.
 
-> **Maintenance note**: these two reference files are read directly by the `interview-prep` skill via `${CLAUDE_PLUGIN_ROOT}` paths. If they are renamed or moved, update `skills/interview-prep/SKILL.md` (Step 4) accordingly.
+Post-interview feedback template (load only when writing interview feedback, not for prep): **`references/feedback-template.md`**.
 
 ## Design Process
 
@@ -44,6 +44,5 @@ Scoring rubric templates, signal anchors (strong/mixed/weak), and interviewer fe
 
 - Brainteasers and puzzle questions ("why are manhole covers round") — no proven signal.
 - Pure definition recall ("what is a hash map") for senior+ — insults experienced candidates, measures memory not ability.
-- Questions the interviewer cannot score — always pair with expected-answer highlights.
 - Over-indexing on one topic — spread across competencies.
 - Leading or stacked questions — ask one thing at a time, then probe.
