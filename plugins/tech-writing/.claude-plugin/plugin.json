@@ -1,0 +1,16 @@
+{
+  "name": "tech-writing",
+  "version": "0.1.0",
+  "description": "Technical writing helpers. Start with blog-outline: turn a topic into a structured blog outline with per-section word budgets, core arguments, and grounded material references.",
+  "author": {
+    "name": "treadonsnow"
+  },
+  "license": "MIT",
+  "keywords": [
+    "writing",
+    "blog",
+    "outline",
+    "technical-writing",
+    "content"
+  ]
+}

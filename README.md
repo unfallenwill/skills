@@ -12,6 +12,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [import-linter](plugins/import-linter/) | Skill | Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend configs, and interpret lint-imports failures |
 | [interview-prep](plugins/interview-prep/) | Skill, Agent | Generate personalized interview questions, outlines, follow-up probes, and scoring rubrics from candidate resumes |
 | [pd-rule-extractor](plugins/pd-rule-extractor/) | Skill | Exhaustively extract protocol deviation (PD) rules from clinical trial documents into a fixed-format Excel table, with dedup, 3-vote adversarial review, and auditable coverage evidence |
+| [tech-writing](plugins/tech-writing/) | Skill | Turn a topic into a structured technical blog outline — per-section word budgets, core arguments, and grounded material references |
 
 ## Installation
 
@@ -28,6 +29,7 @@ Install via the marketplace (recommended):
 /plugin install import-linter@treadonsnow-skills
 /plugin install interview-prep@treadonsnow-skills
 /plugin install pd-rule-extractor@treadonsnow-skills
+/plugin install tech-writing@treadonsnow-skills
 ```
 
 ## Plugin structure

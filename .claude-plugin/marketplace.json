@@ -42,6 +42,12 @@
       "source": "./plugins/pd-rule-extractor",
       "description": "Exhaustively extract protocol deviation (PD) rules from clinical trial source documents (protocol, DVP, database design/CRF) into a fixed-format Excel rule table, with cross-source dedup, per-rule 3-vote adversarial review, and auditable coverage evidence.",
       "version": "0.1.0"
+    },
+    {
+      "name": "tech-writing",
+      "source": "./plugins/tech-writing",
+      "description": "Technical writing helpers. Start with blog-outline: turn a topic into a structured blog outline with per-section word budgets, core arguments, and grounded material references.",
+      "version": "0.1.0"
     }
   ]
 }
