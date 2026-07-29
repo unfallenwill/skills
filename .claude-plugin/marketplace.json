@@ -48,6 +48,12 @@
       "source": "./plugins/tech-writing",
       "description": "Technical writing helpers. Start with blog-outline: turn a topic into a structured blog outline with per-section word budgets, core arguments, and grounded material references.",
       "version": "0.1.0"
+    },
+    {
+      "name": "openclaw",
+      "source": "./plugins/openclaw",
+      "description": "Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files.",
+      "version": "0.1.0"
     }
   ]
 }
