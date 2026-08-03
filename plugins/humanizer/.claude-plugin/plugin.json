@@ -1,0 +1,9 @@
+{
+  "name": "humanizer",
+  "version": "0.1.0",
+  "description": "去除 AI 生成内容的 AI 味：在忠实原文表达意图的前提下润色中文内容，使其符合人类写作与阅读习惯",
+  "author": {
+    "name": "caosen"
+  },
+  "keywords": ["writing", "humanize", "polish", "chinese", "de-ai"]
+}

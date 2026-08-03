@@ -14,6 +14,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [pd-rule-extractor](plugins/pd-rule-extractor/) | Skill | Exhaustively extract protocol deviation (PD) rules from clinical trial documents into a fixed-format Excel table, with dedup, 3-vote adversarial review, and auditable coverage evidence |
 | [tech-writing](plugins/tech-writing/) | Skill | Turn a topic into a structured technical blog outline — per-section word budgets, core arguments, and grounded material references |
 | [openclaw](plugins/openclaw/) | Skill | Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files |
+| [humanizer](plugins/humanizer/) | Skill | Remove the "AI flavor" from AI-generated Chinese content: four-layer diagnosis, faithful rewriting with three intensity levels, genre-specific rules, and transparent change reports |
 
 ## Installation
 
@@ -32,6 +33,7 @@ Install via the marketplace (recommended):
 /plugin install pd-rule-extractor@treadonsnow-skills
 /plugin install tech-writing@treadonsnow-skills
 /plugin install openclaw@treadonsnow-skills
+/plugin install humanizer@treadonsnow-skills
 ```
 
 ## Plugin structure

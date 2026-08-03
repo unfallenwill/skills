@@ -54,6 +54,12 @@
       "source": "./plugins/openclaw",
       "description": "Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files.",
       "version": "0.1.0"
+    },
+    {
+      "name": "humanizer",
+      "source": "./plugins/humanizer",
+      "description": "Remove the 'AI flavor' from AI-generated Chinese content: diagnose word/sentence/structure/tone-level AI patterns, rewrite faithfully to the original intent, and report every change with before/after examples.",
+      "version": "0.1.0"
     }
   ]
 }
