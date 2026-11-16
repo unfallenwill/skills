@@ -14,9 +14,9 @@
  *   - kill the whole process group on shutdown so nothing keeps holding a port
  *
  * Usage:
- *   goalctl.js up   [--service NAME]... [--all] [--config PATH] [--start CMD --name NAME]
- *   goalctl.js down [--service NAME]... [--keep]
- *   goalctl.js status
+ *   srv.js up   [--service NAME]... [--all] [--config PATH] [--start CMD --name NAME]
+ *   srv.js down [--service NAME]... [--keep]
+ *   srv.js status
  */
 
 'use strict';
@@ -28,9 +28,9 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const HOST = '127.0.0.1';
-const PORT_BASE = Number(process.env.GOAL_CHECK_PORT_BASE || 8800);
-const DEFAULT_TIMEOUT = Number(process.env.GOAL_CHECK_TIMEOUT || 60);
-const CONFIG_NAMES = ['goal-check.json', '.goal-check.json', '.goal-check/config.json'];
+const PORT_BASE = Number(process.env.VERIFY_PORT_BASE || 8800);
+const DEFAULT_TIMEOUT = Number(process.env.VERIFY_TIMEOUT || 60);
+const CONFIG_NAMES = ['verify.json', '.verify.json', '.verify/config.json'];
 
 // Only these placeholders are substituted. Anything else in braces is left alone,
 // because commands legitimately contain things like awk's `{print $1}`.
@@ -67,27 +67,27 @@ function findRepoRoot(start) {
 /**
  * Temporary directory for this run.
  *
- * Set `GOAL_CHECK_RUN_DIR` to isolate parallel runs (separate worktrees, separate
+ * Set `VERIFY_RUN_DIR` to isolate parallel runs (separate worktrees, separate
  * branches) — otherwise two runs of the same repository fight over the port and the
  * throwaway database.
  */
 function runDirFor(repoRoot) {
-  if (process.env.GOAL_CHECK_RUN_DIR) return path.resolve(process.env.GOAL_CHECK_RUN_DIR);
+  if (process.env.VERIFY_RUN_DIR) return path.resolve(process.env.VERIFY_RUN_DIR);
   const digest = crypto.createHash('sha256').update(repoRoot).digest('hex').slice(0, 8);
-  return path.join(os.tmpdir(), `goal-check-${digest}`);
+  return path.join(os.tmpdir(), `verify-${digest}`);
 }
 
 /**
  * Load the service configuration.
  *
- * Lookup order: `--config` > `GOAL_CHECK_CONFIG` > conventional file names in the repo root.
+ * Lookup order: `--config` > `VERIFY_CONFIG` > conventional file names in the repo root.
  *
  * @returns {{config: object, path: string|null}}
  */
 function loadConfig(repoRoot, explicit) {
   const candidates = [];
   if (explicit) candidates.push(path.resolve(explicit));
-  if (process.env.GOAL_CHECK_CONFIG) candidates.push(path.resolve(process.env.GOAL_CHECK_CONFIG));
+  if (process.env.VERIFY_CONFIG) candidates.push(path.resolve(process.env.VERIFY_CONFIG));
   for (const name of CONFIG_NAMES) candidates.push(path.join(repoRoot, name));
 
   for (const candidate of candidates) {
@@ -437,7 +437,7 @@ async function cmdUp(args) {
 
   if (services.length === 0) {
     die(
-      'No service to start. Write a goal-check.json (see references/runner-config.md), ' +
+      'No service to start. Write a verify.json (see references/runner-config.md), ' +
         'or pass a start command directly: --start "npm run dev"',
     );
   }
@@ -516,9 +516,9 @@ async function cmdUp(args) {
       for (const [key, value] of Object.entries(service.env)) {
         env[key] = String(render(value, context));
       }
-      env.GOAL_CHECK_SERVICE = service.name;
-      env.GOAL_CHECK_BASE_URL = baseUrl;
-      env.GOAL_CHECK_PORT = String(port);
+      env.VERIFY_SERVICE = service.name;
+      env.VERIFY_BASE_URL = baseUrl;
+      env.VERIFY_PORT = String(port);
 
       const command = render(service.start, context);
       const logPath = path.join(runDir, `${safeFileName(service.name)}.log`);
@@ -653,7 +653,7 @@ async function main() {
       return cmdStatus(args);
     default:
       process.stderr.write(
-        'Usage: goalctl.js up|down|status [options]\n' +
+        'Usage: srv.js up|down|status [options]\n' +
           '  up     [--all] [--service NAME] [--config PATH] [--run-dir DIR]\n' +
           '         [--start CMD --name NAME] [--cwd DIR] [--ready-url PATH]\n' +
           '         [--ready-status CODE] [--env K=V] [--port N]\n' +

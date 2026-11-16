@@ -1,7 +1,7 @@
 # Plan schema
 
 A plan is a JSON file describing the requests to send and the responses to expect.
-Write it to `/tmp/goal-check-plan.json` — never into the repository.
+Write it to `/tmp/verify-plan.json` — never into the repository.
 
 ```json
 {
@@ -14,7 +14,7 @@ Write it to `/tmp/goal-check-plan.json` — never into the repository.
 
 | Field | Type | Description |
 |---|---|---|
-| `default_service` | string | Service used by steps that do not name one. Resolved through the run manifest written by `goalctl.js`. |
+| `default_service` | string | Service used by steps that do not name one. Resolved through the run manifest written by `srv.js`. |
 | `steps` | array | The steps, executed in order. |
 
 ## Step fields
@@ -187,13 +187,13 @@ reference earlier ones with `{{step name.field}}`:
 ## Running
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/probe.js" /tmp/goal-check-plan.json
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/probe.js" /tmp/verify-plan.json
 ```
 
 | Option | Description |
 |---|---|
 | `--dry-run` | Validate the plan only — paths, service names, variable references, and the references inside `expect`. Sends nothing. |
-| `--manifest` | Path to the `manifest.json` written by `goalctl.js`. |
+| `--manifest` | Path to the `manifest.json` written by `srv.js`. |
 | `--run-dir` | The run directory to read the manifest from. |
 | `--timeout` | Per-request timeout in milliseconds. Default 15000. |
 | `--json` | Print the results as JSON. |
@@ -206,13 +206,13 @@ a false claim.
 Run the script **from the repository root**. The run directory is derived from the
 repository path, so running from elsewhere points the script at a different directory
 and it will not find the manifest. Use `--manifest`, `--run-dir`, or
-`GOAL_CHECK_RUN_DIR` to point at an explicit directory. A plan whose steps carry
+`VERIFY_RUN_DIR` to point at an explicit directory. A plan whose steps carry
 their own `base_url` or `url` does not need the manifest at all.
 
 A dry run sends nothing: its summary means "the plan is well formed", not "the
 requests succeeded".
 
-`default_service` must match a service `name` in `goal-check.json` exactly. A
+`default_service` must match a service `name` in `verify.json` exactly. A
 mismatch makes every step fail with `unknown service`.
 
 Step names must be unique: two steps sharing a name overwrite each other in the

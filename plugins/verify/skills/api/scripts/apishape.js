@@ -46,13 +46,13 @@ function findRepoRoot(start) {
   }
 }
 
-/** Temporary directory for this run; mirrors goalctl.js. */
+/** Temporary directory for this run; mirrors srv.js. */
 function runDirFor(repoRoot) {
-  if (process.env.GOAL_CHECK_RUN_DIR) return path.resolve(process.env.GOAL_CHECK_RUN_DIR);
+  if (process.env.VERIFY_RUN_DIR) return path.resolve(process.env.VERIFY_RUN_DIR);
   const crypto = require('crypto');
   const os = require('os');
   const digest = crypto.createHash('sha256').update(repoRoot).digest('hex').slice(0, 8);
-  return path.join(os.tmpdir(), `goal-check-${digest}`);
+  return path.join(os.tmpdir(), `verify-${digest}`);
 }
 
 /** Resolve the services map (service name -> base URL) from the run manifest. */
@@ -64,7 +64,7 @@ function resolveServices(manifestPath, runDir) {
   }
   if (!fs.existsSync(file)) {
     throw new Error(
-      `Cannot find ${file}. Start the services with goalctl.js up first, or pass --base-url.`,
+      `Cannot find ${file}. Start the services with srv.js up first, or pass --base-url.`,
     );
   }
   const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));

@@ -1,11 +1,11 @@
 ---
-name: goal-check
+name: api
 version: 0.1.0
 description: This skill should be used when the user asks to "start the service and check the API", "verify the change actually works", "smoke test the endpoint", "run it and hit the API", "end-to-end check", "起服务验证", "跑起来打一下接口", "冒烟测一下", "端到端确认", "验证行为是否符合预期", "这个功能真的能用吗", or says the task requires proving runtime behaviour rather than merely passing unit tests. Starts the service with the repository's own native start command and drives real HTTP requests from a plan derived from the task goal, reporting passes, failures and uncovered gaps honestly. Not for unit-test-only, documentation-only, or non-HTTP CLI work.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
-# Goal-Check
+# api
 
 Green gates do not mean correct behaviour. Static checks and unit tests answer
 "is the code written correctly?". Goal-check answers a different question:
@@ -112,7 +112,7 @@ directly when the repository has no such command, and say so in the report.
 
 ### Step 2 — Start the service
 
-Write a `goal-check.json` — at the repository root, or anywhere and passed with
+Write a `verify.json` — at the repository root, or anywhere and passed with
 `--config`:
 
 ```json
@@ -132,7 +132,7 @@ Write a `goal-check.json` — at the repository root, or anywhere and passed wit
 Then start it:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" up --service api
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" up --service api
 ```
 
 The runner is a thin shell around the repository's own command. It allocates a free
@@ -148,17 +148,17 @@ service that is up but serving nothing.
 To start a service without a config file:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" up \
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" up \
   --start "npm run dev" --name api --ready-url /healthz
 ```
 
 **Run every script from the repository root.** The run directory is derived from the
 repository path, so running from anywhere else points the scripts at a different
-directory and they will not find the manifest. Use `--run-dir` or `GOAL_CHECK_RUN_DIR`
+directory and they will not find the manifest. Use `--run-dir` or `VERIFY_RUN_DIR`
 to point them at an explicit directory instead.
 
-`goal-check.json` in the repository root is an untracked local file. Prefer
-`--config /tmp/goal-check.json` when the repository should stay clean.
+`verify.json` in the repository root is an untracked local file. Prefer
+`--config /tmp/verify.json` when the repository should stay clean.
 
 ### Step 3 — Learn the interface shape
 
@@ -166,14 +166,14 @@ Never write a request body from memory. After a schema change, a plan written fr
 recollection silently verifies the wrong thing.
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/apishape.js"
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/apishape.js"
 ```
 
 It prints the paths, methods, required fields and query parameter names the service
 actually accepts, and can emit a plan skeleton with the expectations left empty:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/apishape.js" --skeleton
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/apishape.js" --skeleton
 ```
 
 This reads `/openapi.json` — a document **generated from the implementation**. Use it
@@ -187,7 +187,7 @@ somewhere else, point at it with `--spec-path /v3/api-docs`.
 
 ### Step 4 — Write the plan
 
-Write the plan to `/tmp/goal-check-plan.json` — never into the repository; a
+Write the plan to `/tmp/verify-plan.json` — never into the repository; a
 verification plan is a throwaway debugging artifact.
 
 ```json
@@ -224,21 +224,21 @@ verification plan is a throwaway debugging artifact.
 }
 ```
 
-`default_service` must match a service `name` in `goal-check.json` exactly. Every
+`default_service` must match a service `name` in `verify.json` exactly. Every
 response body is stored under its step name, so a later step can reference an earlier
 one with `{{step name.field}}` — that is the mechanism for reading back what was
 written, rather than hardcoding an identifier that may have changed.
 
 `expect.json` is a **subset** match: only the fields written down are compared, extra
 fields in the response do not fail. See
-`${CLAUDE_PLUGIN_ROOT}/skills/goal-check/references/plan-schema.md` for every field,
+`${CLAUDE_PLUGIN_ROOT}/skills/api/references/plan-schema.md` for every field,
 variable references and the remaining expectation types.
 
 Check the plan before running it — a typo in a path or a variable name is cheaper to
 find here than in a failed request:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/probe.js" --dry-run /tmp/goal-check-plan.json
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/probe.js" --dry-run /tmp/verify-plan.json
 ```
 
 A dry run validates the plan only — including the references inside `expect` — and
@@ -248,7 +248,7 @@ succeeded".
 ### Step 5 — Run the plan
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/probe.js" /tmp/goal-check-plan.json
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/probe.js" /tmp/verify-plan.json
 ```
 
 Output:
@@ -270,11 +270,11 @@ A plan that creates data will hit conflicts on a second run. Restart the service
 a clean database before repeating it:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" up --service api
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" up --service api
 ```
 
 This resets the data **only** when the service uses a throwaway SQLite file inside the
-run directory — that is what the `DATABASE_URL` in `goal-check.json` arranges. For a
+run directory — that is what the `DATABASE_URL` in `verify.json` arranges. For a
 database server (Postgres, MySQL), `up` does not reset anything: add an explicit
 reset to the plan or the start command (`docker compose down -v && up -d`, or a
 migration that drops and recreates the schema), and make sure the plan creates data
@@ -286,14 +286,14 @@ Each request has a 15 second timeout. Raise it for slow endpoints with
 ### Step 6 — Diagnose failures
 
 The real cause of a 500 is almost always in the service log. The run directory is
-printed by `goalctl.js up`; the log of each service is `<run directory>/<service>.log`:
+printed by `srv.js up`; the log of each service is `<run directory>/<service>.log`:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" status
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" status
 tail -50 <run directory>/api.log
 ```
 
-`${CLAUDE_PLUGIN_ROOT}/skills/goal-check/references/failure-signals.md` maps symptoms
+`${CLAUDE_PLUGIN_ROOT}/skills/api/references/failure-signals.md` maps symptoms
 to their usual root causes — a 404 with a correct-looking path, a 500 with an
 `IntegrityError`, a query parameter that is ignored, a write that returns 201 but
 reads back stale.
@@ -304,7 +304,7 @@ Always stop the services afterwards, otherwise a background process keeps holdin
 port:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" down
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" down
 ```
 
 `down` kills the process group and removes the throwaway database and logs.
@@ -343,16 +343,16 @@ than counting them as evidence.
 
 ## Resources
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/references/plan-schema.md` — every plan
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/references/plan-schema.md` — every plan
   field, expectation type and variable reference
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/references/runner-config.md` —
-  `goal-check.json` format, placeholder reference, and how to point a service at a
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/references/runner-config.md` —
+  `verify.json` format, placeholder reference, and how to point a service at a
   throwaway database
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/references/failure-signals.md` — symptom →
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/references/failure-signals.md` — symptom →
   root cause lookup table
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js` — service lifecycle
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js` — service lifecycle
   (`up` / `down` / `status`)
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/probe.js` — run a plan and check the
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/probe.js` — run a plan and check the
   responses
-- `${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/apishape.js` — print the interface
+- `${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/apishape.js` — print the interface
   shape, emit a plan skeleton

@@ -1,16 +1,16 @@
 # Runner configuration
 
-`goalctl.js` starts services with the repository's **own** start command. It never
+`srv.js` starts services with the repository's **own** start command. It never
 decides how a service boots, and it never rewrites the command into a
 framework-specific form. The command is always the one the project documents.
 
 ## Where to put the config
 
-Create `goal-check.json` at the repository root. The runner looks for, in order:
+Create `verify.json` at the repository root. The runner looks for, in order:
 
 1. `--config <path>`
-2. `$GOAL_CHECK_CONFIG`
-3. `goal-check.json`, `.goal-check.json`, `.goal-check/config.json` in the repository root
+2. `$VERIFY_CONFIG`
+3. `verify.json`, `.verify.json`, `.verify/config.json` in the repository root
 
 Keep it out of the repository if it names absolute local paths; it is a local
 convenience file, not part of the project.
@@ -99,20 +99,20 @@ Linux and something else on macOS):
 └── api.db             # throwaway databases
 ```
 
-`goalctl.js up` prints the path. The name is derived from the repository path, so it
+`srv.js up` prints the path. The name is derived from the repository path, so it
 survives a new terminal. Run every script **from the repository root** — the run
 directory is derived from the repository path, so a script started elsewhere looks in
 a different directory and will not find the manifest.
 
-Set `GOAL_CHECK_RUN_DIR` to isolate parallel runs — two worktrees of the same
+Set `VERIFY_RUN_DIR` to isolate parallel runs — two worktrees of the same
 repository otherwise fight over the same port and the same throwaway database:
 
 ```bash
-export GOAL_CHECK_RUN_DIR=/tmp/goal-check-branch-a
+export VERIFY_RUN_DIR=/tmp/verify-branch-a
 ```
 
-`GOAL_CHECK_PORT_BASE` (default `8800`) shifts the port range.
-`GOAL_CHECK_TIMEOUT` (default `60`) sets the default readiness timeout.
+`VERIFY_PORT_BASE` (default `8800`) shifts the port range.
+`VERIFY_TIMEOUT` (default `60`) sets the default readiness timeout.
 
 ## Throwaway databases
 
@@ -147,25 +147,25 @@ repository's own compose file and point `DATABASE_URL` at it:
 ## Commands
 
 ```bash
-S="${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts"
+S="${CLAUDE_PLUGIN_ROOT}/skills/api/scripts"
 
 # Start every service in the config (plain `up` does this too)
-node "$S/goalctl.js" up --all
+node "$S/srv.js" up --all
 
 # Start one service from the config
-node "$S/goalctl.js" up --service api
+node "$S/srv.js" up --service api
 
 # Start a service without a config file
-node "$S/goalctl.js" up --start "npm run dev" --name api --ready-url /healthz \
+node "$S/srv.js" up --start "npm run dev" --name api --ready-url /healthz \
   --env "DATABASE_URL=sqlite:///{tmpdir}/api.db"
 
 # Inspect
-node "$S/goalctl.js" status
+node "$S/srv.js" status
 
 # Stop and clean up
-node "$S/goalctl.js" down
-node "$S/goalctl.js" down --service api     # stop one service
-node "$S/goalctl.js" down --keep             # keep the database and logs
+node "$S/srv.js" down
+node "$S/srv.js" down --service api     # stop one service
+node "$S/srv.js" down --keep             # keep the database and logs
 ```
 
 `--service` selects among the services of the config file. A service given with

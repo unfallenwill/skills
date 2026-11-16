@@ -1,4 +1,4 @@
-# Goal-Check
+# verify
 
 Verify runtime behaviour against the task goal — not against the implementation that
 was just written.
@@ -43,7 +43,7 @@ Node.js 18 or newer (the scripts use the built-in `fetch`). No npm dependencies.
 
 ```bash
 /plugin marketplace add unfallenwill/skills
-/plugin install goal-check@treadonsnow
+/plugin install verify@treadonsnow
 ```
 
 ## Usage
@@ -61,19 +61,19 @@ Node.js 18 or newer (the scripts use the built-in `fetch`). No npm dependencies.
 **Manual** — the bundled scripts can be used directly:
 
 ```bash
-S="${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts"
+S="${CLAUDE_PLUGIN_ROOT}/skills/api/scripts"
 
-# start the service (repository's own command, from goal-check.json)
-node "$S/goalctl.js" up --service api
+# start the service (repository's own command, from verify.json)
+node "$S/srv.js" up --service api
 
 # see what the service actually accepts
 node "$S/apishape.js"
 
 # run the plan
-node "$S/probe.js" /tmp/goal-check-plan.json
+node "$S/probe.js" /tmp/verify-plan.json
 
 # stop and clean up
-node "$S/goalctl.js" down
+node "$S/srv.js" down
 ```
 
 Run the scripts from the repository root: the run directory is derived from the
@@ -116,7 +116,7 @@ Every response body is stored, so later steps can reference earlier ones with
 
 ## Service configuration
 
-`goal-check.json` at the repository root:
+`verify.json` at the repository root:
 
 ```json
 {
@@ -133,21 +133,21 @@ Every response body is stored, so later steps can reference earlier ones with
 ```
 
 Placeholders: `{host}`, `{port}`, `{base_url}`, `{tmpdir}`, `{run_dir}`, `{cwd}`,
-`{name}`. See `skills/goal-check/references/runner-config.md` for the full format.
+`{name}`. See `skills/api/references/runner-config.md` for the full format.
 
 ## Structure
 
 ```
-goal-check/
+verify/
 ├── .claude-plugin/plugin.json
-├── skills/goal-check/
+├── skills/api/
 │   ├── SKILL.md                          # the workflow and the principles behind it
 │   ├── references/
 │   │   ├── plan-schema.md                # every plan field, expectation type, variable reference
-│   │   ├── runner-config.md              # goal-check.json format, placeholders, throwaway databases
+│   │   ├── runner-config.md              # verify.json format, placeholders, throwaway databases
 │   │   └── failure-signals.md            # symptom -> root cause lookup
 │   └── scripts/
-│       ├── goalctl.js                    # service lifecycle: up / down / status
+│       ├── srv.js                    # service lifecycle: up / down / status
 │       ├── probe.js                      # run a plan, check the responses
 │       └── apishape.js                   # print the interface shape, emit a plan skeleton
 └── README.md

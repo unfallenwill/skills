@@ -11,7 +11,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [import-linter](plugins/import-linter/) | Skill | Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend configs, and interpret lint-imports failures |
 | [interview-prep](plugins/interview-prep/) | Skill, Agent | Generate personalized interview questions, outlines, follow-up probes, and scoring rubrics from candidate resumes |
 | [humanizer](plugins/humanizer/) | Skill | Remove the "AI flavor" from AI-generated Chinese content: four-layer diagnosis, faithful rewriting with three intensity levels, genre-specific rules, and transparent change reports |
-| [goal-check](plugins/goal-check/) | Skill | Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly |
+| [verify](plugins/verify/) | Skill | Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly |
 
 ## Installation
 
@@ -27,7 +27,7 @@ Install via the marketplace (recommended):
 /plugin install import-linter@treadonsnow
 /plugin install interview-prep@treadonsnow
 /plugin install humanizer@treadonsnow
-/plugin install goal-check@treadonsnow
+/plugin install verify@treadonsnow
 ```
 
 ## Plugin structure

@@ -1,11 +1,11 @@
 # Failure signals
 
 When a step fails, the first move is always the same: read the service log. The run
-directory is printed by `goalctl.js up`, and each service's log is
+directory is printed by `srv.js up`, and each service's log is
 `<run directory>/<service name>.log`:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/goal-check/scripts/goalctl.js" status
+node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/srv.js" status
 tail -50 <run directory>/api.log
 ```
 
@@ -22,9 +22,9 @@ wrong, so the log can be read with a hypothesis in mind.
 | 422 on a body that looks legal | A schema constraint the plan did not account for: precision, length, `extra="forbid"`, an enum | The error body lists the rejected field; compare with `apishape.js` |
 | The query parameter is ignored and the full list comes back | The parameter name does not match the contract (`minPrice` vs `min_price`); the wrong one is silently dropped | `apishape.js` prints the names the code reads |
 | A write returns 201 but the read-back shows the old value | The side effect never persisted: the commit is missing, or an adapter drops the field | Log; add a read-back step and compare |
-| The service never becomes ready | Wrong port, the app needs a dependency that is not up, or the start command exits immediately | The service log; `goalctl.js status` |
+| The service never becomes ready | Wrong port, the app needs a dependency that is not up, or the start command exits immediately | The service log; `srv.js status` |
 | The service exits right after starting | The start command is wrong for this project, or a required environment variable is missing | Log tail — the runner prints it on timeout |
-| A second run of the same plan reports conflicts | The throwaway database was not recreated | Restart with `goalctl.js up`, which clears run artifacts — but only for a SQLite file inside the run directory. A database server needs an explicit reset |
+| A second run of the same plan reports conflicts | The throwaway database was not recreated | Restart with `srv.js up`, which clears run artifacts — but only for a SQLite file inside the run directory. A database server needs an explicit reset |
 | A step fails with `request failed: TimeoutError` | The endpoint did not answer within the 15 second request timeout | Raise it with `--timeout <ms>`, or check the service log for a slow query |
 | The plan works but the feature is still broken | The expectations came from the implementation rather than the goal | Re-derive the expectations from the task goal |
 
