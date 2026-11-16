@@ -10,9 +10,6 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [otel-dev](plugins/otel-dev/) | Skill, Agent | Language-agnostic methodology for bootstrapping the OpenTelemetry SDK and applying semantic conventions correctly |
 | [import-linter](plugins/import-linter/) | Skill | Configure, maintain, and diagnose import-linter (Python import architecture enforcement): generate contracts, extend configs, and interpret lint-imports failures |
 | [interview-prep](plugins/interview-prep/) | Skill, Agent | Generate personalized interview questions, outlines, follow-up probes, and scoring rubrics from candidate resumes |
-| [pd-rule-extractor](plugins/pd-rule-extractor/) | Skill | Exhaustively extract protocol deviation (PD) rules from clinical trial documents into a fixed-format Excel table, with dedup, 3-vote adversarial review, and auditable coverage evidence |
-| [tech-writing](plugins/tech-writing/) | Skill | Turn a topic into a structured technical blog outline — per-section word budgets, core arguments, and grounded material references |
-| [openclaw](plugins/openclaw/) | Skill | Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files |
 | [humanizer](plugins/humanizer/) | Skill | Remove the "AI flavor" from AI-generated Chinese content: four-layer diagnosis, faithful rewriting with three intensity levels, genre-specific rules, and transparent change reports |
 | [goal-check](plugins/goal-check/) | Skill | Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly |
 
@@ -29,9 +26,6 @@ Install via the marketplace (recommended):
 /plugin install otel-dev@treadonsnow
 /plugin install import-linter@treadonsnow
 /plugin install interview-prep@treadonsnow
-/plugin install pd-rule-extractor@treadonsnow
-/plugin install tech-writing@treadonsnow
-/plugin install openclaw@treadonsnow
 /plugin install humanizer@treadonsnow
 /plugin install goal-check@treadonsnow
 ```

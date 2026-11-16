@@ -32,24 +32,6 @@
       "version": "0.1.0"
     },
     {
-      "name": "pd-rule-extractor",
-      "source": "./plugins/pd-rule-extractor",
-      "description": "Exhaustively extract protocol deviation (PD) rules from clinical trial source documents (protocol, DVP, database design/CRF) into a fixed-format Excel rule table, with cross-source dedup, per-rule 3-vote adversarial review, and auditable coverage evidence.",
-      "version": "0.1.0"
-    },
-    {
-      "name": "tech-writing",
-      "source": "./plugins/tech-writing",
-      "description": "Technical writing helpers. Start with blog-outline: turn a topic into a structured blog outline with per-section word budgets, core arguments, and grounded material references.",
-      "version": "0.1.0"
-    },
-    {
-      "name": "openclaw",
-      "source": "./plugins/openclaw",
-      "description": "Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files.",
-      "version": "0.1.0"
-    },
-    {
       "name": "humanizer",
       "source": "./plugins/humanizer",
       "description": "Remove the 'AI flavor' from AI-generated Chinese content: diagnose word/sentence/structure/tone-level AI patterns, rewrite faithfully to the original intent, and report every change with before/after examples.",
