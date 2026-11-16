@@ -40,5 +40,5 @@ openclaw/
 ## 安装
 
 ```bash
-/plugin install openclaw@treadonsnow-skills
+/plugin install openclaw@treadonsnow
 ```

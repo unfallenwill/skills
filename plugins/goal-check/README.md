@@ -42,8 +42,8 @@ Node.js 18 or newer (the scripts use the built-in `fetch`). No npm dependencies.
 ## Installation
 
 ```bash
-/plugin marketplace add unfallenwill/treadonsnow-skills
-/plugin install goal-check@treadonsnow-skills
+/plugin marketplace add unfallenwill/skills
+/plugin install goal-check@treadonsnow
 ```
 
 ## Usage

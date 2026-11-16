@@ -38,5 +38,5 @@ skills/blog-outline/
 ## Install
 
 ```bash
-/plugin install tech-writing@treadonsnow-skills
+/plugin install tech-writing@treadonsnow
 ```

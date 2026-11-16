@@ -16,7 +16,7 @@ Output language follows the resume language (Chinese resume → Chinese intervie
 From this marketplace:
 
 ```bash
-/plugin install interview-prep@treadonsnow-skills
+/plugin install interview-prep@treadonsnow
 ```
 
 Or test locally:

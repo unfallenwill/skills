@@ -39,8 +39,8 @@ the Python tool that enforces your project's import architecture via declarative
 ## Local testing
 
 ```bash
-/plugin marketplace add unfallenwill/treadonsnow-skills
-/plugin install import-linter@treadonsnow-skills
+/plugin marketplace add unfallenwill/skills
+/plugin install import-linter@treadonsnow
 ```
 
 Then try:

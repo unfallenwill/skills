@@ -17,8 +17,8 @@
 ## 安装
 
 ```bash
-/plugin marketplace add unfallenwill/treadonsnow-skills
-/plugin install humanizer@treadonsnow-skills
+/plugin marketplace add unfallenwill/skills
+/plugin install humanizer@treadonsnow
 ```
 
 ## 使用

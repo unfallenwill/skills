@@ -1,4 +1,4 @@
-# treadonsnow-skills
+# treadonsnow
 
 A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, and more.
 
@@ -23,19 +23,19 @@ Install via the marketplace (recommended):
 
 ```bash
 # Add the marketplace
-/plugin marketplace add unfallenwill/treadonsnow-skills
+/plugin marketplace add unfallenwill/skills
 
 # Install plugins
-/plugin install codex@treadonsnow-skills
-/plugin install pandas-copilot@treadonsnow-skills
-/plugin install otel-dev@treadonsnow-skills
-/plugin install import-linter@treadonsnow-skills
-/plugin install interview-prep@treadonsnow-skills
-/plugin install pd-rule-extractor@treadonsnow-skills
-/plugin install tech-writing@treadonsnow-skills
-/plugin install openclaw@treadonsnow-skills
-/plugin install humanizer@treadonsnow-skills
-/plugin install goal-check@treadonsnow-skills
+/plugin install codex@treadonsnow
+/plugin install pandas-copilot@treadonsnow
+/plugin install otel-dev@treadonsnow
+/plugin install import-linter@treadonsnow
+/plugin install interview-prep@treadonsnow
+/plugin install pd-rule-extractor@treadonsnow
+/plugin install tech-writing@treadonsnow
+/plugin install openclaw@treadonsnow
+/plugin install humanizer@treadonsnow
+/plugin install goal-check@treadonsnow
 ```
 
 ## Plugin structure
