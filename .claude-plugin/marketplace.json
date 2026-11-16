@@ -60,6 +60,12 @@
       "source": "./plugins/humanizer",
       "description": "Remove the 'AI flavor' from AI-generated Chinese content: diagnose word/sentence/structure/tone-level AI patterns, rewrite faithfully to the original intent, and report every change with before/after examples.",
       "version": "0.1.0"
+    },
+    {
+      "name": "goal-check",
+      "source": "./plugins/goal-check",
+      "description": "Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly.",
+      "version": "0.1.0"
     }
   ]
 }

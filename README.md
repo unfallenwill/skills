@@ -15,6 +15,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [tech-writing](plugins/tech-writing/) | Skill | Turn a topic into a structured technical blog outline — per-section word budgets, core arguments, and grounded material references |
 | [openclaw](plugins/openclaw/) | Skill | Generate a customized bootstrap instruction document that a new OpenClaw agent follows to initialize its own identity, soul, and workspace files |
 | [humanizer](plugins/humanizer/) | Skill | Remove the "AI flavor" from AI-generated Chinese content: four-layer diagnosis, faithful rewriting with three intensity levels, genre-specific rules, and transparent change reports |
+| [goal-check](plugins/goal-check/) | Skill | Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly |
 
 ## Installation
 
@@ -34,6 +35,7 @@ Install via the marketplace (recommended):
 /plugin install tech-writing@treadonsnow-skills
 /plugin install openclaw@treadonsnow-skills
 /plugin install humanizer@treadonsnow-skills
+/plugin install goal-check@treadonsnow-skills
 ```
 
 ## Plugin structure
