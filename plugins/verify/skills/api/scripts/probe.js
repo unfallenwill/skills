@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 /**
- * Run a declarative verification plan against a live service and check every response.
+ * Run a declarative test plan against a running service and check every response.
  *
  * The plan is a JSON file:
  *
  *   {
- *     "default_service": "api",
+ *     "base_url": "http://127.0.0.1:3000",
  *     "steps": [
  *       {
  *         "name": "create product",
  *         "method": "POST",
  *         "path": "/api/products",
  *         "body": { "sku": "SKU-1", "name": "Widget" },
+ *         "coverage": "verified",
  *         "expect": { "status": 201, "json": { "sku": "SKU-1" } }
  *       }
  *     ]
@@ -19,13 +20,14 @@
  *
  * Step fields:
  *   name        step name; used in the report and for variable references
- *   service     service name; defaults to the plan's `default_service`
- *   base_url    service root URL (takes precedence over `service`)
- *   url         full URL (takes precedence over `base_url` and `path`)
+ *   base_url    service root URL for this step; overrides the plan's base_url
+ *   url         full URL; overrides base_url and path
  *   method      HTTP method, default GET
  *   path        request path; supports {{step.field}} references
  *   body        request body, sent as JSON
  *   headers     extra request headers
+ *   coverage    verified (default) | assumption | skipped
+ *   note        why a step is skipped; shown under "Not verified"
  *   expect      expectations:
  *                 status        status code, a number or a list of acceptable codes
  *                 json          subset match against the response JSON
@@ -36,17 +38,17 @@
  * earlier ones with {{step name.field}}.
  *
  * Usage:
- *   probe.js [--dry-run] [--json] [--manifest PATH] [--run-dir DIR] [--timeout MS] plan.json
+ *   probe.js [--dry-run] [--json] [--base-url URL] [--timeout MS] plan.json
  */
 
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
 
 // A reference is {{<step name>.<field path>}}. The step name may contain spaces and
 // non-ASCII characters; the field path is dotted and may contain numeric list indexes.
-// A step name must therefore not contain a dot.
+// A step name must therefore not contain a dot - nor a brace, because the braces
+// delimit the reference and cannot be nested.
 const TEMPLATE = /\{\{([^{}]+)\}\}/g;
 
 // A string that is exactly one reference, and nothing else.
@@ -58,49 +60,42 @@ const DEFAULT_TIMEOUT_MS = 15000;
 // follows it, or `probe.js --dry-run plan.json` would read the plan as the flag value.
 const BOOLEAN_FLAGS = new Set(['dry-run', 'json']);
 
-/** Walk up to the repository root (a directory containing .git). */
-function findRepoRoot(start) {
-  let current = path.resolve(start);
-  for (;;) {
-    if (fs.existsSync(path.join(current, '.git'))) return current;
-    const parent = path.dirname(current);
-    if (parent === current) return path.resolve(start);
-    current = parent;
-  }
-}
-
-/** Temporary directory for this run; mirrors srv.js. */
-function runDirFor(repoRoot) {
-  if (process.env.VERIFY_RUN_DIR) return path.resolve(process.env.VERIFY_RUN_DIR);
-  const crypto = require('crypto');
-  const os = require('os');
-  const digest = crypto.createHash('sha256').update(repoRoot).digest('hex').slice(0, 8);
-  return path.join(os.tmpdir(), `verify-${digest}`);
-}
+// What a step claims it established.
+//
+//   verified   - the step asserted something and counts as evidence
+//   assumption - the step passed, but would pass even if the feature were broken
+//   skipped    - the goal cannot be reached with an HTTP call; the step is not sent
+const COVERAGE = new Set(['verified', 'assumption', 'skipped']);
 
 /**
- * Resolve the services map (service name -> base URL) from the run manifest.
+ * Resolve the base URL of a step.
  *
- * @param {string} manifestPath  explicit manifest path
- * @param {string} runDir        explicit run directory
- * @returns {Record<string, string>}
+ * Precedence, most specific first: the step's own url, the step's base_url, the
+ * plan's base_url, then --base-url from the command line.
+ *
+ * @returns {string} the root URL
+ * @throws {Error} when no base URL is available at all
  */
-function resolveServices(manifestPath, runDir) {
-  let file = manifestPath;
-  if (!file) {
-    const base = runDir ? path.resolve(runDir) : runDirFor(findRepoRoot(process.cwd()));
-    file = path.join(base, 'manifest.json');
+function resolveBaseUrl(planBaseUrl, cliBaseUrl) {
+  const candidates = [planBaseUrl, cliBaseUrl];
+  for (const candidate of candidates) {
+    if (candidate !== undefined && candidate !== null && candidate !== '') {
+      return String(candidate);
+    }
   }
-  if (!fs.existsSync(file)) {
-    throw new Error(
-      `Cannot find ${file}. Start the services with srv.js up first, point at a ` +
-        'manifest with --manifest, or set `base_url` (or `url`) on each step.',
-    );
-  }
-  const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const services = {};
-  for (const entry of manifest.services || []) services[entry.name] = entry.base_url;
-  return services;
+  throw new Error(
+    'no target: give the step a `url` or a `base_url`, give the plan a `base_url`, ' +
+      'or pass --base-url',
+  );
+}
+
+/** Work out which URL a step should hit. */
+function stepUrl(step, planBaseUrl, cliBaseUrl) {
+  if (step.url) return step.url;
+  const baseUrl = step.base_url || resolveBaseUrl(planBaseUrl, cliBaseUrl);
+  let suffix = step.path || '';
+  if (suffix && !suffix.startsWith('/')) suffix = `/${suffix}`;
+  return `${String(baseUrl).replace(/\/+$/, '')}${suffix}`;
 }
 
 /**
@@ -121,6 +116,10 @@ function resolveReference(key, variables) {
     if (Array.isArray(current)) current = current[Number(part)];
     else if (current && typeof current === 'object') current = current[part];
     else throw new Error(`cannot read "${part}" from ${trimmed}`);
+    // A field that is not there is a broken reference. Resolving it to undefined
+    // would send a request to a URL ending in "/undefined" and fail with a 404
+    // that says nothing about the plan.
+    if (current === undefined) throw new Error(`undefined field "${part}" in "${trimmed}"`);
   }
   return current;
 }
@@ -136,7 +135,16 @@ function render(value, variables) {
   if (typeof value === 'string') {
     const exact = EXACT_REFERENCE.exec(value);
     if (exact) return resolveReference(exact[1], variables);
-    return value.replace(TEMPLATE, (match, key) => String(resolveReference(key, variables)));
+    const out = value.replace(TEMPLATE, (match, key) => String(resolveReference(key, variables)));
+    // A reference that survived the substitution was never parseable - a step name
+    // containing braces, for example. Sending it literally would hit a URL full of
+    // braces and fail with a confusing 404.
+    if (out.includes('{{')) {
+      throw new Error(
+        `cannot parse the reference in "${value}" - a step name may not contain braces`,
+      );
+    }
+    return out;
   }
   if (Array.isArray(value)) return value.map((item) => render(item, variables));
   if (value && typeof value === 'object') {
@@ -150,8 +158,13 @@ function render(value, variables) {
 /** True when `actual` contains everything in `expected` (recursive subset match). */
 function subsetMatches(expected, actual) {
   if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
-    if (!actual || typeof actual !== 'object' || Array.isArray(actual)) return false;
-    return Object.entries(expected).every(
+    if (!actual || typeof actual !== 'object') return false;
+    const entries = Object.entries(expected);
+    // An empty expectation constrains nothing, so it matches anything - including a
+    // list. A populated one cannot match a list, which has no named fields.
+    if (entries.length === 0) return true;
+    if (Array.isArray(actual)) return false;
+    return entries.every(
       ([key, sub]) =>
         Object.prototype.hasOwnProperty.call(actual, key) && subsetMatches(sub, actual[key]),
     );
@@ -178,15 +191,16 @@ function lookupPath(payload, dotted) {
  * A stand-in for a response body, used by dry runs.
  *
  * Any property resolves to a readable placeholder, so a plan can be checked without
- * having captured a single response.
+ * having captured a single response. The placeholder nests: a reference may walk
+ * several levels deep into it, and the URL shows the path that was substituted.
  */
-function makePlaceholder() {
+function makePlaceholder(prefix = 'value') {
   return new Proxy(
     {},
     {
       get(_target, property) {
-        if (property === Symbol.toPrimitive) return () => 'object';
-        return `<${String(property)}>`;
+        if (property === Symbol.toPrimitive) return () => `<${prefix}>`;
+        return makePlaceholder(`${prefix}.${String(property)}`);
       },
     },
   );
@@ -222,7 +236,12 @@ async function sendRequest(method, url, body, headers, timeoutMs) {
       redirect: 'manual',
     });
   } catch (error) {
-    return { status: 0, payload: null, raw: `request failed: ${error.name}: ${error.message}` };
+    const cause = error.cause && error.cause.code ? ` (${error.cause.code})` : '';
+    return {
+      status: 0,
+      payload: null,
+      raw: `request failed: ${error.name}: ${error.message}${cause}`,
+    };
   }
 
   const raw = await response.text();
@@ -238,27 +257,6 @@ async function sendRequest(method, url, body, headers, timeoutMs) {
 // --------------------------------------------------------------------------- //
 // Execution
 // --------------------------------------------------------------------------- //
-
-/** Work out which URL a step should hit. */
-function stepUrl(step, getServices, defaultService) {
-  if (step.url) return step.url;
-  let baseUrl = step.base_url;
-  if (!baseUrl) {
-    const name = step.service || defaultService;
-    if (!name) throw new Error('no service / base_url / url: cannot resolve the request target');
-    // Only steps that actually name a service need the manifest.
-    const services = getServices();
-    if (!Object.prototype.hasOwnProperty.call(services, name)) {
-      throw new Error(
-        `unknown service "${name}"; available: ${Object.keys(services).sort().join(', ') || '(none)'}`,
-      );
-    }
-    baseUrl = services[name];
-  }
-  let suffix = step.path || '';
-  if (suffix && !suffix.startsWith('/')) suffix = `/${suffix}`;
-  return `${String(baseUrl).replace(/\/+$/, '')}${suffix}`;
-}
 
 /**
  * Render every expectation, so a broken reference inside one is reported even in a
@@ -280,18 +278,43 @@ function renderExpect(expect, variables) {
 }
 
 /**
+ * True when the step asserts something. A step that asserts nothing passes whatever
+ * the service answers - it is not evidence of anything.
+ */
+function hasAssertion(expect) {
+  if (!expect) return false;
+  if (expect.status !== undefined && expect.status !== null) return true;
+  // An empty object or an empty list constrains nothing, so it is not an assertion
+  // by itself - but the other expectation types still count.
+  if (expect.json !== undefined && expect.json !== null) {
+    const empty = typeof expect.json === 'object' && Object.keys(expect.json).length === 0;
+    if (!empty) return true;
+  }
+  if (expect.json_paths && Object.keys(expect.json_paths).length > 0) return true;
+  // An empty substring is present in every body, so it constrains nothing.
+  if (
+    expect.text_contains !== undefined &&
+    expect.text_contains !== null &&
+    expect.text_contains !== ''
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Execute the plan.
  *
  * @param {object} plan
- * @param {function(): Record<string, string>} getServices  resolves the manifest lazily
+ * @param {string|null} cliBaseUrl  base URL from the command line
  * @param {boolean} dryRun    validate the plan without sending any request
  * @param {number} timeoutMs  per-request timeout
  * @returns {Promise<object[]>} one result record per step
  */
-async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TIMEOUT_MS) {
+async function runPlan(plan, cliBaseUrl, dryRun = false, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const variables = {};
   const results = [];
-  const defaultService = plan.default_service;
+  const planBaseUrl = plan.base_url;
   const steps = plan.steps || [];
 
   if (dryRun) {
@@ -300,7 +323,8 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
     // exactly what a dry run is for. Steps without an explicit name get the same
     // auto-generated name they will have at runtime.
     steps.forEach((step, index) => {
-      variables[step.name || `step-${index + 1}`] = makePlaceholder();
+      const name = step.name || `step-${index + 1}`;
+      variables[name] = makePlaceholder(name);
     });
   }
 
@@ -308,6 +332,31 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
     const step = steps[index];
     const name = step.name || `step-${index + 1}`;
     const method = (step.method || 'GET').toUpperCase();
+    const coverage = step.coverage || 'verified';
+
+    if (!COVERAGE.has(coverage)) {
+      results.push({
+        step: name,
+        status: 'ERROR',
+        coverage,
+        detail:
+          `plan problem: unknown coverage "${coverage}" ` +
+          '(use verified, assumption or skipped)',
+      });
+      continue;
+    }
+
+    if (coverage === 'skipped') {
+      // The goal cannot be reached with an HTTP call. The step is not sent; it is
+      // reported as a gap, never as a pass.
+      results.push({
+        step: name,
+        status: 'SKIPPED',
+        coverage,
+        note: step.note || null,
+      });
+      continue;
+    }
 
     let url;
     let body;
@@ -315,7 +364,7 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
     let expect;
     let problems = [];
     try {
-      url = String(render(stepUrl(step, getServices, defaultService), variables));
+      url = String(render(stepUrl(step, planBaseUrl, cliBaseUrl), variables));
       body = render(step.body, variables);
       headers = render(step.headers, variables);
       const rendered = renderExpect(step.expect, variables);
@@ -324,8 +373,27 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
     } catch (error) {
       results.push({
         step: name,
+        coverage,
         status: 'ERROR',
         detail: `plan problem: ${error.message}`,
+      });
+      continue;
+    }
+
+    // A step that asserts nothing passes whatever the service answers. That is not
+    // evidence, so the plan is wrong rather than the service.
+    if (!hasAssertion(expect)) {
+      results.push({
+        step: name,
+        method,
+        url,
+        status: 'ERROR',
+        coverage,
+        problems: [
+          'state the status code, or the fields, that the requirement calls for',
+        ],
+        detail: 'plan problem: this step asserts nothing - a step that cannot fail is not evidence',
+        response: null,
       });
       continue;
     }
@@ -335,6 +403,7 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
         step: name,
         method,
         url,
+        coverage,
         status: problems.length === 0 ? 'PASS' : 'FAIL',
         http_status: null,
         problems,
@@ -397,6 +466,7 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
       step: name,
       method,
       url,
+      coverage,
       status: problems.length === 0 ? 'PASS' : 'FAIL',
       http_status: status,
       problems,
@@ -407,36 +477,79 @@ async function runPlan(plan, getServices, dryRun = false, timeoutMs = DEFAULT_TI
   return results;
 }
 
+/** Count what the run established. */
+function summarize(results) {
+  const summary = { verified: 0, failed: 0, assumption: 0, skipped: 0 };
+  for (const result of results) {
+    if (result.status === 'SKIPPED') summary.skipped += 1;
+    else if (result.status !== 'PASS') summary.failed += 1;
+    else if (result.coverage === 'assumption') summary.assumption += 1;
+    else summary.verified += 1;
+  }
+  return summary;
+}
+
 /** Print a human-readable report. */
-function printReport(results) {
+function printReport(results, dryRun = false) {
   for (const result of results) {
     if (result.status === 'ERROR') {
       process.stdout.write(`! ${result.step}  -> ${result.detail}\n`);
+      for (const problem of result.problems || []) {
+        process.stdout.write(`    -> ${problem}\n`);
+      }
+      continue;
+    }
+    if (result.status === 'SKIPPED') {
+      const note = result.note ? `: ${result.note}` : '';
+      process.stdout.write(`SKIP ${result.step}  (not verified${note})\n`);
       continue;
     }
     const mark = result.status === 'PASS' ? 'OK' : 'FAIL';
     const suffix = result.dry_run ? '  (dry-run)' : '';
-    process.stdout.write(`${mark} ${result.step}  [${result.method || ''} ${result.url || ''}]${suffix}\n`);
+    const kind = result.coverage === 'assumption' ? '  (assumption)' : '';
+    process.stdout.write(
+      `${mark} ${result.step}  [${result.method || ''} ${result.url || ''}]${suffix}${kind}\n`,
+    );
     if (result.http_status) process.stdout.write(`    HTTP ${result.http_status}\n`);
     for (const problem of result.problems || []) {
       process.stdout.write(`    -> ${problem}\n`);
     }
-    if (result.status === 'FAIL' && result.response !== null && result.response !== undefined) {
+    // A request that never arrived has no response body to show; the problem line
+    // already says what went wrong.
+    if (
+      result.status === 'FAIL' &&
+      result.http_status !== 0 &&
+      result.response !== null &&
+      result.response !== undefined
+    ) {
       const body =
         typeof result.response === 'string' ? result.response : JSON.stringify(result.response);
       process.stdout.write(`    actual response: ${body}\n`);
     }
   }
-  const failed = results.filter((result) => result.status !== 'PASS').length;
-  const dryRun = results.length > 0 && results.every((result) => result.dry_run);
+
+  const summary = summarize(results);
   if (dryRun) {
     // A dry run says the plan is well formed. It says nothing about the service.
+    // A skipped step is a gap, not a problem - it is not part of what was validated.
+    const valid = results.filter((result) => result.status === 'PASS').length;
+    const skipped = results.filter((result) => result.status === 'SKIPPED').length;
+    const broken = results.length - valid - skipped;
     process.stdout.write(
-      `\n${results.length - failed}/${results.length} steps validated (dry run - no requests sent).\n`,
+      `\n${valid} of ${results.length - skipped} steps validated (dry run - no requests sent).\n`,
     );
-  } else {
-    process.stdout.write(`\n${results.length - failed}/${results.length} steps passed.\n`);
+    if (broken > 0) process.stdout.write(`${broken} plan problem(s) - see above.\n`);
+    return;
   }
+  process.stdout.write('\n');
+  process.stdout.write(`Verified      ${summary.verified}  (counts as evidence)\n`);
+  process.stdout.write(`Failed        ${summary.failed}\  (the service did not behave as required)\n`);
+  process.stdout.write(
+    `Assumptions   ${summary.assumption}  (passed, but would pass even if the feature were broken)\n`,
+  );
+  process.stdout.write(
+    `Not verified  ${summary.skipped}  (goals this plan cannot check over HTTP)\n`,
+  );
 }
 
 /**
@@ -488,48 +601,42 @@ async function main() {
 
   if (!planFile) {
     process.stderr.write(
-      'Usage: probe.js [--dry-run] [--json] [--manifest PATH] [--run-dir DIR] ' +
-        '[--timeout MS] plan.json\n',
+      'Usage: probe.js [--dry-run] [--json] [--base-url URL] [--timeout MS] plan.json\n',
     );
     return 1;
   }
 
-  const plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
+  let plan;
+  try {
+    plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
+  } catch (error) {
+    process.stderr.write(`Cannot read the plan ${planFile}: ${error.message}\n`);
+    return 1;
+  }
+
   const steps = plan.steps || [];
   if (steps.length === 0) {
     process.stderr.write(
       `The plan ${planFile} has no steps. An empty plan verifies nothing - write the ` +
-        'steps that the task goal requires.\n',
+        'steps that the requirement calls for.\n',
     );
     return 1;
   }
 
   const timeoutMs = args.timeout ? Number(args.timeout) : DEFAULT_TIMEOUT_MS;
+  const cliBaseUrl = args.baseUrl ? String(args.baseUrl) : null;
 
-  // The manifest is only read when a step actually names a service. A plan whose
-  // steps carry their own base_url or url runs without one.
-  let cachedServices = null;
-  let servicesError = null;
-  const getServices = () => {
-    if (cachedServices) return cachedServices;
-    if (!servicesError) {
-      try {
-        cachedServices = resolveServices(args.manifest, args.runDir);
-      } catch (error) {
-        servicesError = error;
-      }
-    }
-    if (servicesError) throw servicesError;
-    return cachedServices;
-  };
+  const dryRun = Boolean(args.dryRun);
+  const results = await runPlan(plan, cliBaseUrl, dryRun, timeoutMs);
 
-  const results = await runPlan(plan, getServices, Boolean(args.dryRun), timeoutMs);
-
-  const failed = results.filter((result) => result.status !== 'PASS').length;
+  const failed = results.filter((result) => result.status !== 'PASS' && result.status !== 'SKIPPED')
+    .length;
   if (args.json) {
-    process.stdout.write(`${JSON.stringify({ results, failed }, null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ results, summary: summarize(results), failed }, null, 2)}\n`,
+    );
   } else {
-    printReport(results);
+    printReport(results, dryRun);
   }
   return failed > 0 ? 1 : 0;
 }

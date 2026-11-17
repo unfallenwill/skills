@@ -4,3 +4,6 @@ node_modules/
 __pycache__/
 *.py[cod]
 .venv/
+
+# eval output
+**/evals/results/

@@ -1,7 +1,7 @@
 {
   "name": "verify",
-  "version": "0.1.0",
-  "description": "Verify runtime behaviour against the task goal: start the service with the repository's own native start command, drive real HTTP requests from a declarative plan, and report passes, failures and uncovered gaps honestly.",
+  "version": "0.2.0",
+  "description": "Test the runtime behaviour of a running HTTP service against the requirement: drive real requests from a declarative plan, and report what was verified, what failed and what was not covered.",
   "author": {
     "name": "hicaosen"
   },

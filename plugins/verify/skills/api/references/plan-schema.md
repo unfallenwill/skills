@@ -5,7 +5,7 @@ Write it to `/tmp/verify-plan.json` — never into the repository.
 
 ```json
 {
-  "default_service": "api",
+  "base_url": "http://127.0.0.1:3000",
   "steps": [ ... ]
 }
 ```
@@ -14,28 +14,30 @@ Write it to `/tmp/verify-plan.json` — never into the repository.
 
 | Field | Type | Description |
 |---|---|---|
-| `default_service` | string | Service used by steps that do not name one. Resolved through the run manifest written by `srv.js`. |
+| `base_url` | string | Root URL of the service. Overridden by a step's own `base_url` or `url`. |
 | `steps` | array | The steps, executed in order. |
+
+The base URL can also come from the command line: `--base-url`. The step wins over
+the plan, the plan wins over the command line.
 
 ## Step fields
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | no | Step name, used in the report and for variable references. Defaults to `step-<number>`. |
-| `service` | string | no | Service name; overrides `default_service`. |
-| `base_url` | string | no | Service root URL. Takes precedence over `service`. |
+| `base_url` | string | no | Root URL for this step only. |
 | `url` | string | no | Full URL. Takes precedence over `base_url` and `path`. |
 | `method` | string | no | HTTP method, default `GET`. |
-| `path` | string | no | Request path, may include a query string. Required unless `url` or `base_url` is given. Supports variable references. |
+| `path` | string | no | Request path, may include a query string. Appended to the base URL; a step with no `path` hits the base URL root. Supports variable references. |
 | `body` | any | no | Request body, sent as JSON. |
 | `headers` | object | no | Extra request headers. |
+| `coverage` | string | no | `verified` (default), `assumption` or `skipped`. See below. |
+| `note` | string | no | Why a step is skipped. Shown under "Not verified". |
 | `expect` | object | no | The expectations. See below. |
+| `_fill_in`, `_body_shape` | string | no | Notes `apishape.js --skeleton` attaches to a step. They are not fields of the request — delete them before running. |
 
-A step needs a target: either `url`, or `base_url`, or `service` (with a
-`default_service` fallback). `path` is appended to `base_url`.
-
-The manifest is only read when a step actually names a service. A plan whose steps
-carry their own `base_url` or `url` runs without one.
+A step needs a target: `url`, or `base_url`, or the plan's `base_url`, or
+`--base-url`. `path` is appended to the base URL.
 
 ## expect
 
@@ -45,6 +47,12 @@ carry their own `base_url` or `url` runs without one.
 | `json` | object | Expected response JSON — a **subset** match. |
 | `json_paths` | object | `{ "dotted.path": expected }` pairs, checked against the response JSON. |
 | `text_contains` | string | Substring that must appear in the raw response body. |
+
+**A step must assert something.** A step with no `status`, no `json`, no `json_paths`
+and no `text_contains` passes whatever the service answers, so it is a plan error —
+`probe.js` rejects it instead of counting it as a pass. An empty `json` object does
+not count as an assertion either: it constrains nothing. (An empty `json` alongside a
+`json_paths` or `text_contains` assertion is fine — that step does assert something.)
 
 ### Subset matching
 
@@ -89,6 +97,27 @@ object, or when the value lives deep in the payload:
 
 List indexes are numeric path segments. A missing path is a failure, not a skip.
 
+## Coverage markers
+
+What a step claims it established. This is what makes the report readable: a count of
+green ticks means nothing without knowing what each tick covered.
+
+| `coverage` | Meaning | Counts as |
+|---|---|---|
+| `verified` | The step asserts what the requirement calls for | evidence |
+| `assumption` | The step passed, but would pass even if the feature were broken | coverage, not evidence |
+| `skipped` | The goal cannot be reached with an HTTP call | a gap |
+
+`skipped` steps are not sent. They are reported under "Not verified", with their
+`note` if they have one. Use them for the parts of the requirement that live in a
+scheduled job, a background worker or a CLI path — they belong in the report, not
+silently in the plan. A `skipped` step is a note in the report, not a task: do not go
+looking for a scheduler or a CLI to check the goal, and do not perform the goal.
+
+`assumption` steps still assert something; they are steps whose expectation does not
+discriminate between "the feature works" and "the feature is ignored". Mark them
+rather than letting them pass as evidence.
+
 ## Variable references
 
 Every response body is stored in a variable table under its step name. Later steps can
@@ -115,29 +144,33 @@ reference earlier ones with `{{step name.field}}`:
 ```
 
 - The step name may contain spaces and non-ASCII characters; it must **not** contain a
-  dot, because the first dot separates the step name from the field path.
+  dot, because the first dot separates the step name from the field path. It must not
+  contain braces either — the braces of a reference cannot be nested, so
+  `{{a {b}.c}}` cannot be parsed and the plan is rejected.
 - Nested fields use further dots: `{{create product.lines.0.sku}}`.
 - Referencing a step that does not exist fails **that step** with `undefined variable`
-  and leaves the rest of the plan running.
+  and leaves the rest of the plan running. Referencing a field that is not there
+  fails with `undefined field`.
 - Only JSON responses are stored. A step whose response is not JSON captures nothing.
 
 ## Complete example
 
 ```json
 {
-  "default_service": "api",
+  "base_url": "http://127.0.0.1:3000",
   "steps": [
     {
       "name": "create product",
       "method": "POST",
       "path": "/api/products",
       "body": { "sku": "SKU-1", "name": "Widget", "price": "3.50" },
+      "coverage": "verified",
       "expect": { "status": 201, "json": { "sku": "SKU-1", "name": "Widget", "price": "3.50" } }
     },
     {
       "name": "read back product",
       "method": "GET",
-      "path": "/api/products/SKU-1",
+      "path": "/api/products/{{create product.sku}}",
       "expect": { "status": 200, "json": { "name": "Widget" }, "json_paths": { "price": "3.50" } }
     },
     {
@@ -164,13 +197,21 @@ reference earlier ones with `{{step name.field}}`:
       "name": "price filter applies",
       "method": "GET",
       "path": "/api/products?min_price=2",
+      "coverage": "assumption",
       "expect": { "status": 200, "json_paths": { "total": 1 } }
+    },
+    {
+      "name": "a threshold above every price returns nothing",
+      "method": "GET",
+      "path": "/api/products?min_price=99",
+      "coverage": "verified",
+      "expect": { "status": 200, "json_paths": { "total": 0 } }
     },
     {
       "name": "place order",
       "method": "POST",
       "path": "/api/orders",
-      "body": { "order_id": "ORD-1", "lines": [{ "sku": "SKU-1", "qty": 2 }] },
+      "body": { "order_id": "ORD-1", "lines": [{ "sku": "{{create product.sku}}", "qty": 2 }] },
       "expect": { "status": 201, "json": { "order_id": "ORD-1", "total": "7.00" } }
     },
     {
@@ -179,6 +220,11 @@ reference earlier ones with `{{step name.field}}`:
       "path": "/api/orders",
       "body": { "order_id": "ORD-2", "lines": [{ "sku": "GHOST", "qty": 1 }] },
       "expect": { "status": 404 }
+    },
+    {
+      "name": "the reconciliation job is not reachable over HTTP",
+      "coverage": "skipped",
+      "note": "the requirement only affects the nightly reconciliation job"
     }
   ]
 }
@@ -192,30 +238,18 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/api/scripts/probe.js" /tmp/verify-plan.json
 
 | Option | Description |
 |---|---|
-| `--dry-run` | Validate the plan only — paths, service names, variable references, and the references inside `expect`. Sends nothing. |
-| `--manifest` | Path to the `manifest.json` written by `srv.js`. |
-| `--run-dir` | The run directory to read the manifest from. |
+| `--dry-run` | Validate the plan only — paths, variable references, the references inside `expect` and the coverage markers. Sends nothing. |
+| `--base-url` | Root URL of the service, used when the plan does not name one. |
 | `--timeout` | Per-request timeout in milliseconds. Default 15000. |
 | `--json` | Print the results as JSON. |
 
 Flags may come before or after the plan file.
 
-An empty plan is an error: it verifies nothing, and reporting it as a pass would be
-a false claim.
-
-Run the script **from the repository root**. The run directory is derived from the
-repository path, so running from elsewhere points the script at a different directory
-and it will not find the manifest. Use `--manifest`, `--run-dir`, or
-`VERIFY_RUN_DIR` to point at an explicit directory. A plan whose steps carry
-their own `base_url` or `url` does not need the manifest at all.
-
-A dry run sends nothing: its summary means "the plan is well formed", not "the
-requests succeeded".
-
-`default_service` must match a service `name` in `verify.json` exactly. A
-mismatch makes every step fail with `unknown service`.
+An empty plan is an error: it verifies nothing, and reporting it as a pass would be a
+false claim.
 
 Step names must be unique: two steps sharing a name overwrite each other in the
 variable table, and the later one wins.
 
-Exit code: 0 when every step passed, 1 when any step failed or errored.
+Exit code: 0 when every step passed, 1 when any step failed or errored. `skipped`
+steps do not fail the run — a gap is not a failure, and the report says so.

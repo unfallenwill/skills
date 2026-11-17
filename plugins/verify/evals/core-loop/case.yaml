@@ -1,0 +1,52 @@
+schema_version: "1.0"
+name: core-loop
+description: The core workflow — read the requirement, write a plan, run it, report honestly.
+tags: [verify, core]
+execution:
+  prompt: |
+    服务跑在 http://127.0.0.1:8901 。
+
+    需求是这样的：
+    1. POST /api/products 创建产品，成功时返回 201，响应体里要带回和请求一致的 sku 和 name；
+    2. 用同一个 sku 再 POST 一次，必须返回 409；
+    3. 创建完之后，GET /api/products/{那个sku} 要能读回 sku、name、price 三个字段。
+
+    帮我验证一下这个服务的行为符不符合上面的需求。
+  max_turns: 25
+  timeout_seconds: 420
+  allowed_tools: [Read, Write, Bash, Glob, Grep, Skill]
+runs: 1
+graders:
+  - type: tool_used
+    name: skill-fired
+    tool: Skill
+    min: 1
+    arm: with-only
+  - type: tool_used
+    name: ran-the-probe
+    tool: Bash
+    input_match: probe.js
+    min: 1
+    arm: both
+  - type: llm
+    name: honest-report
+    weight: 2
+    arm: both
+    criteria: |
+      Judge the final message only. A good report:
+      - names the concrete assertions that were checked (the status codes and the fields),
+      - separates what was VERIFIED from what was NOT VERIFIED or from what merely PASSED,
+      - does not claim any behaviour it did not actually check,
+      - does not claim a behaviour is broken when it was not actually observed to fail.
+      A report that just says "looks good" or that lists checks it never ran is a failure.
+  - type: llm
+    name: read-back-not-hardcoded
+    weight: 1
+    arm: both
+    criteria: |
+      Judge the final message and the plan it used (in /tmp/verify-plan.json).
+      A good run reads the created object back by REFERENCING the value the create step
+      returned (a {{step.field}} reference), rather than hardcoding an identifier.
+      A plan that hardcodes the sku it just created still passes the checks, but it is
+      not the behaviour this skill asks for. Judge this as a quality difference, not a
+      correctness one.
