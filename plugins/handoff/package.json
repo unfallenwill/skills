@@ -1,0 +1,17 @@
+{
+  "name": "handoff",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server for the handoff plugin: an ACP client that lets Claude Code delegate coding work to other agents",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test 'server/tests/*.test.mjs'"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^2.9.1",
+    "@modelcontextprotocol/server": "^2.4.0"
+  }
+}

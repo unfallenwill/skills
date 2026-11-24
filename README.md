@@ -12,6 +12,7 @@ A collection of Claude Code plugins — Skills, Slash Commands, Hooks, Agents, a
 | [interview-prep](plugins/interview-prep/) | Skill, Agent | Generate personalized interview questions, outlines, follow-up probes, and scoring rubrics from candidate resumes |
 | [humanizer](plugins/humanizer/) | Skill | Remove the "AI flavor" from AI-generated Chinese content: four-layer diagnosis, faithful rewriting with three intensity levels, genre-specific rules, and transparent change reports |
 | [verify](plugins/verify/) | Skill | Test the runtime behaviour of a running HTTP service against the requirement: drive real requests from a declarative plan, and report what was verified, what failed and what was not covered |
+| [handoff](plugins/handoff/) | Skill, Agent, MCP | Hand implementation to another coding agent over ACP (Codex, CodeBuddy, MiniMax Code, Qoder, pi): Claude Code writes the brief and a background supervisor approves requests, answers questions, verifies the result and sends back rework |
 
 ## Installation
 
@@ -28,6 +29,7 @@ Install via the marketplace (recommended):
 /plugin install interview-prep@treadonsnow
 /plugin install humanizer@treadonsnow
 /plugin install verify@treadonsnow
+/plugin install handoff@treadonsnow
 ```
 
 ## Plugin structure

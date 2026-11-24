@@ -42,6 +42,12 @@
       "source": "./plugins/verify",
       "description": "Test the runtime behaviour of a running HTTP service against the requirement: drive real requests from a declarative plan, and report what was verified, what failed and what was not covered.",
       "version": "0.2.0"
+    },
+    {
+      "name": "handoff",
+      "source": "./plugins/handoff",
+      "description": "Hand implementation to another coding agent over ACP (Codex, CodeBuddy, MiniMax Code, Qoder, pi): Claude Code writes the brief and a background supervisor approves requests, answers questions, verifies the result and sends back rework.",
+      "version": "0.1.0"
     }
   ]
 }
